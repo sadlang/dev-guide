@@ -16,6 +16,7 @@ preferred-dark-theme = "navy"
 git-repository-url = "https://github.com/sadlang/dev-guide"
 edit-url-template = "https://github.com/sadlang/dev-guide/edit/main/{path}"
 additional-css = ["theme/rtl.css", "theme/custom.css"]
+additional-js = ["theme/font-zoom.js"]
 mathjax-support = false
 
 [output.html.fold]

@@ -15,7 +15,8 @@
 /* ── الطباعة العربية ───────────────────────────────────────────────────────── */
 .content main {
   font-family: "Tajawal", "Segoe UI", "Noto Naskh Arabic", Tahoma, sans-serif;
-  font-size: 1.02rem;
+  /* الحجم يتأثّر بمقياس الزووم (theme/font-zoom.js) */
+  font-size: calc(1.02rem * var(--sad-font-scale, 1));
   line-height: 2;
   letter-spacing: 0;
 }
@@ -127,6 +128,28 @@
   display:inline-block; background: var(--sad-warn); color:#fff;
   border-radius: 999px; padding:.05rem .5rem; font-size:.75rem; font-family:"Cairo";
 }
+
+/* ── أزرار تكبير/تصغير الخطّ (font-zoom.js) ─────────────────────────────────── */
+.sad-font-zoom {
+  display: inline-flex;
+  align-items: center;
+  gap: .15rem;
+  margin-inline-start: .4rem;
+}
+.sad-font-zoom .sad-font-btn {
+  font-family: "Cairo", sans-serif;
+  font-weight: 700;
+  font-size: .9rem;
+  min-width: 1.9rem;
+}
+.sad-font-zoom .sad-font-label {
+  font-size: .72rem;
+  opacity: .8;
+  min-width: 2.6rem;
+  text-align: center;
+  user-select: none;
+}
+.sad-font-zoom .sad-font-btn:hover { color: var(--sad-accent-2); }
 
 /* الوضع الداكن: تليين الخلفيّات الفاتحة */
 .navy .content code:not(pre code),
