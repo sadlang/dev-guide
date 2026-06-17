@@ -1,0 +1,56 @@
+# ============================================================================
+# نشر دليل مطوّري لغة ص آليًّا على GitHub Pages عند كل دفع إلى main
+# المصدر: mdBook + mdbook-mermaid  →  /book  →  GitHub Pages
+# ============================================================================
+name: نشر الدليل (mdBook → Pages)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# نشر واحد في كل مرة؛ لا تُلغِ عمليّة نشر جارية
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: جلب المستودع
+        uses: actions/checkout@v4
+
+      - name: تثبيت mdBook
+        uses: peaceiris/actions-mdbook@v2
+        with:
+          mdbook-version: latest
+
+      - name: تثبيت mdbook-mermaid + أصوله
+        run: |
+          cargo install mdbook-mermaid --locked
+          mdbook-mermaid install .
+
+      - name: البناء
+        run: mdbook build
+
+      - name: رفع أثر Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./book
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: النشر إلى GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

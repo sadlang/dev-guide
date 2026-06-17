@@ -10,6 +10,9 @@
 
 [![mdBook](https://img.shields.io/badge/built%20with-mdBook-navy)](https://rust-lang.github.io/mdBook/)
 [![لغة ص](https://img.shields.io/badge/sadlang-internals-success)](https://github.com/sadlang/s-programming-language)
+[![نشر](https://github.com/sadlang/dev-guide/actions/workflows/deploy.yml/badge.svg)](https://github.com/sadlang/dev-guide/actions/workflows/deploy.yml)
+
+🌐 **النسخة المنشورة:** https://sadlang.github.io/dev-guide/ (تُبنى آليًّا من `main`).
 
 ## ما الذي يميّز هذا الدليل؟
 
