@@ -1,0 +1,34 @@
+# ============================================================================
+# إعداد mdBook — دليل مطوّري لغة ص (Sad Language Internals Dev Guide)
+# البناء:   mdbook build           التطوير الحيّ:  mdbook serve --open
+# المتطلبات: cargo install mdbook mdbook-mermaid  ثم  mdbook-mermaid install .
+# ============================================================================
+[book]
+title = "دليل مطوّري لغة ص — الأنظمة الداخلية"
+description = "مرجع داخليّ لمطوّري لغة ص: المعجمي، النحوي، AST، المفسّر، المترجم (SIR→LLVM)، ومصدر الحقيقة الموحّد (data-driven)."
+authors = ["فريق تطوير لغة ص (sadlang)"]
+language = "ar"
+src = "src"
+
+[output.html]
+default-theme = "navy"
+preferred-dark-theme = "navy"
+git-repository-url = "https://github.com/sadlang/dev-guide"
+git-repository-icon = "fa-github"
+edit-url-template = "https://github.com/sadlang/dev-guide/edit/main/{path}"
+additional-css = ["theme/rtl.css"]
+mathjax-support = false
+
+[output.html.fold]
+enable = true
+level = 1
+
+[output.html.search]
+enable = true
+limit-results = 30
+
+[preprocessor.mermaid]
+command = "mdbook-mermaid"
+
+[output.html.playground]
+runnable = false

@@ -1,0 +1,48 @@
+/* ============================================================================
+   دعم العربية (RTL) لدليل مطوّري لغة ص — يُحمَّل عبر additional-css في book.toml
+   ============================================================================ */
+
+/* اتجاه المحتوى من اليمين لليسار */
+.content main {
+  direction: rtl;
+  text-align: right;
+}
+
+/* الكتل البرمجية ومخطّطات Mermaid تبقى LTR (كود/إنجليزي) */
+.content pre,
+.content code,
+.content .mermaid,
+.content table code {
+  direction: ltr;
+  text-align: left;
+  unicode-bidi: embed;
+}
+
+/* الجداول: ترويسة لليمين */
+.content table th,
+.content table td {
+  text-align: right;
+}
+
+/* القوائم والاقتباسات */
+.content blockquote {
+  border-right: 4px solid var(--quote-border);
+  border-left: none;
+  padding-right: 1rem;
+  padding-left: 0;
+}
+
+.content ul,
+.content ol {
+  padding-right: 2rem;
+  padding-left: 0;
+}
+
+/* خطّ عربيّ مريح للقراءة */
+.content main {
+  font-family: "Segoe UI", "Noto Naskh Arabic", "Amiri", Tahoma, sans-serif;
+  line-height: 1.9;
+}
+
+/* عناوين أوضح */
+.content h1, .content h2, .content h3 { line-height: 1.6; }

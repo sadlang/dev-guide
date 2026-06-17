@@ -1,0 +1,12 @@
+# مخرجات بناء mdBook
+/book
+book/
+
+# أصول mdbook-mermaid المُولَّدة (تُعاد بـ mdbook-mermaid install .)
+mermaid.min.js
+mermaid-init.js
+
+# ملفات النظام
+.DS_Store
+Thumbs.db
+*.swp
