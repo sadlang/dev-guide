@@ -14,7 +14,6 @@ src = "src"
 default-theme = "navy"
 preferred-dark-theme = "navy"
 git-repository-url = "https://github.com/sadlang/dev-guide"
-git-repository-icon = "fa-github"
 edit-url-template = "https://github.com/sadlang/dev-guide/edit/main/{path}"
 additional-css = ["theme/rtl.css"]
 mathjax-support = false
