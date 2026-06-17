@@ -1,6 +1,8 @@
 # ============================================================================
-# فحص الجودة على كل Pull Request: بناء mdBook + فحص الروابط الداخليّة المكسورة
-# (لا ينشر — النشر في deploy.yml عند الدمج في main)
+# فحص الجودة على كل Pull Request:
+#   1) بناء mdBook (يلتقط أخطاء البناء/المخطّطات)
+#   2) فحص روابط الإخراج المبنيّ بـ lychee (مستقلّ عن إصدار mdBook)
+# لا ينشر — النشر في deploy.yml عند الدمج في main.
 # ============================================================================
 name: فحص الدليل (بناء + روابط)
 
@@ -24,11 +26,16 @@ jobs:
         with:
           mdbook-version: latest
 
-      - name: تثبيت الإضافات (mermaid + linkcheck)
+      - name: تثبيت mdbook-mermaid + أصوله
         run: |
           cargo install mdbook-mermaid --locked
-          cargo install mdbook-linkcheck --locked
           mdbook-mermaid install .
 
-      - name: البناء + فحص الروابط
+      - name: البناء
         run: mdbook build
+
+      - name: فحص الروابط الداخليّة (lychee على الإخراج المبنيّ)
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: --offline --no-progress "book/**/*.html"
+          fail: true

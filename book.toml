@@ -32,7 +32,5 @@ command = "mdbook-mermaid"
 [output.html.playground]
 runnable = false
 
-# فحص الروابط الداخليّة المكسورة (mdbook-linkcheck) — لا يتبع روابط الويب (تفادي الهشاشة)
-[output.linkcheck]
-follow-web-links = false
-warning-policy = "error"
+# ملاحظة: فحص الروابط يتم في CI عبر lychee على الإخراج المبنيّ (book/) — انظر
+# .github/workflows/ci.yml — لأن mdbook-linkcheck غير متوافق مع mdBook 0.5.x حاليًّا.
