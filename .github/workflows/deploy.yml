@@ -31,9 +31,10 @@ jobs:
         with:
           mdbook-version: latest
 
-      - name: تثبيت mdbook-mermaid + أصوله
+      - name: تثبيت الإضافات (mermaid + linkcheck) + أصول mermaid
         run: |
           cargo install mdbook-mermaid --locked
+          cargo install mdbook-linkcheck --locked
           mdbook-mermaid install .
 
       - name: البناء

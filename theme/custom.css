@@ -1,0 +1,140 @@
+/* ============================================================================
+   ثيم احترافيّ لدليل مطوّري لغة ص (Sally UX) — هويّة بصريّة + طباعة + مكوّنات
+   يُحمَّل بعد rtl.css. اللون الأساسيّ: فيروزيّ (#0b7285) بلمسة عربية حديثة.
+   ============================================================================ */
+
+:root {
+  --sad-accent: #0b7285;
+  --sad-accent-2: #1098ad;
+  --sad-accent-soft: #e3fafc;
+  --sad-ink: #1b2733;
+  --sad-warn: #e8590c;
+  --sad-radius: 14px;
+}
+
+/* ── الطباعة العربية ───────────────────────────────────────────────────────── */
+.content main {
+  font-family: "Tajawal", "Segoe UI", "Noto Naskh Arabic", Tahoma, sans-serif;
+  font-size: 1.02rem;
+  line-height: 2;
+  letter-spacing: 0;
+}
+.content h1, .content h2, .content h3, .content h4 {
+  font-family: "Cairo", "Tajawal", sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.content h1 { font-size: 2.1rem; }
+.content h2 {
+  border-bottom: 2px solid var(--sad-accent-soft);
+  padding-bottom: .3rem;
+  margin-top: 2.4rem;
+}
+.content h2::before { content: "▸ "; color: var(--sad-accent); }
+
+/* كود بخط برمجيّ واضح */
+.content pre code,
+.content code {
+  font-family: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+  font-size: .92em;
+}
+.content code:not(pre code) {
+  background: var(--sad-accent-soft);
+  color: #0c5460;
+  padding: .12em .4em;
+  border-radius: 6px;
+}
+.content pre {
+  border-radius: var(--sad-radius);
+  border: 1px solid rgba(0,0,0,.08);
+  box-shadow: 0 2px 10px rgba(0,0,0,.04);
+}
+
+/* ── الاقتباسات كصناديق تنبيه ─────────────────────────────────────────────── */
+.content blockquote {
+  background: var(--sad-accent-soft);
+  border-right: 5px solid var(--sad-accent);
+  border-radius: var(--sad-radius);
+  padding: .9rem 1.1rem;
+  color: var(--sad-ink);
+  box-shadow: 0 1px 6px rgba(11,114,133,.08);
+}
+
+/* ── الجداول ───────────────────────────────────────────────────────────────── */
+.content table {
+  border-collapse: collapse;
+  border-radius: var(--sad-radius);
+  overflow: hidden;
+  box-shadow: 0 1px 8px rgba(0,0,0,.06);
+  width: 100%;
+}
+.content table thead {
+  background: linear-gradient(90deg, var(--sad-accent), var(--sad-accent-2));
+  color: #fff;
+}
+.content table th, .content table td {
+  border: 1px solid rgba(0,0,0,.06);
+  padding: .55rem .8rem;
+}
+.content table tbody tr:nth-child(even) { background: rgba(11,114,133,.04); }
+
+/* ── الروابط ───────────────────────────────────────────────────────────────── */
+.content a:not(.header) { color: var(--sad-accent); text-decoration-thickness: 1px; }
+.content a:not(.header):hover { color: var(--sad-warn); }
+
+/* ── صفحة الهبوط (Hero + بطاقات) ─────────────────────────────────────────────── */
+.hero {
+  background: linear-gradient(135deg, var(--sad-accent), var(--sad-accent-2));
+  color: #fff;
+  border-radius: 20px;
+  padding: 2.4rem 2rem;
+  margin: 1rem 0 2rem;
+  box-shadow: 0 10px 30px rgba(11,114,133,.25);
+  text-align: center;
+}
+.hero h1 { color:#fff; margin:.2rem 0; font-size: 2.4rem; }
+.hero p { color: #e3fafc; font-size: 1.12rem; margin:.4rem auto; max-width: 46ch; }
+.hero .tagline { font-family:"Cairo",sans-serif; font-weight:700; opacity:.95; }
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+.card {
+  display: block;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,.08);
+  border-radius: var(--sad-radius);
+  padding: 1.1rem 1.2rem;
+  text-decoration: none !important;
+  color: var(--sad-ink) !important;
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s;
+  box-shadow: 0 1px 6px rgba(0,0,0,.05);
+}
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 24px rgba(11,114,133,.18);
+  border-color: var(--sad-accent);
+}
+.card .ico { font-size: 1.7rem; }
+.card .t { font-family:"Cairo",sans-serif; font-weight:700; display:block; margin:.3rem 0; color: var(--sad-accent); }
+.card .d { font-size:.92rem; color:#495057; }
+
+/* شارة ⭐ للقسم المميِّز */
+.badge-star {
+  display:inline-block; background: var(--sad-warn); color:#fff;
+  border-radius: 999px; padding:.05rem .5rem; font-size:.75rem; font-family:"Cairo";
+}
+
+/* الوضع الداكن: تليين الخلفيّات الفاتحة */
+.navy .content code:not(pre code),
+.coal .content code:not(pre code),
+.ayu  .content code:not(pre code) { background: rgba(16,152,173,.18); color: #99e9f2; }
+.navy .content blockquote,
+.coal .content blockquote,
+.ayu  .content blockquote { background: rgba(16,152,173,.10); color: inherit; }
+.navy .content .card,
+.coal .content .card,
+.ayu  .content .card { background: rgba(255,255,255,.04); color: #c8d3de !important; }

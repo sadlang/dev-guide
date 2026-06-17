@@ -15,7 +15,7 @@ default-theme = "navy"
 preferred-dark-theme = "navy"
 git-repository-url = "https://github.com/sadlang/dev-guide"
 edit-url-template = "https://github.com/sadlang/dev-guide/edit/main/{path}"
-additional-css = ["theme/rtl.css"]
+additional-css = ["theme/rtl.css", "theme/custom.css"]
 mathjax-support = false
 
 [output.html.fold]
@@ -31,3 +31,8 @@ command = "mdbook-mermaid"
 
 [output.html.playground]
 runnable = false
+
+# فحص الروابط الداخليّة المكسورة (mdbook-linkcheck) — لا يتبع روابط الويب (تفادي الهشاشة)
+[output.linkcheck]
+follow-web-links = false
+warning-policy = "error"
