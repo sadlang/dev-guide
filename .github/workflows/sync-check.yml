@@ -1,7 +1,8 @@
 # ============================================================================
-# فحص مزامنة الدليل مع كود اللغة (drift detection)
-# يعمل أسبوعيًّا + يدويًّا. عند رصد انجراف يفتح/يحدّث قضيّة تُلخّص الفصول المتأثّرة.
-# المصدر الموحّد للربط: sync/sources.yaml — المنطق في scripts/check_sync.py
+# فحص مزامنة الدليل مع كود اللغة (drift detection) — مربوطٌ بإصدارات اللغة.
+# يقيس الانجراف تجاه **آخر وسم إصدار** للغة (لا تجاه dev المتقلّب)، فتعكس النتيجة
+# «هل يطابق الدليلُ الإصدارَ المنشور؟». يعمل: عند إصدار لغة جديد (repository_dispatch
+# من مستودع اللغة)، أسبوعيًّا، ويدويًّا. عند الانجراف يفتح/يحدّث قضيّة بالفصول المتأثّرة.
 # ============================================================================
 name: sync-check
 
@@ -9,6 +10,12 @@ on:
   schedule:
     - cron: "0 6 * * 1"      # كل اثنين 06:00 UTC
   workflow_dispatch:
+    inputs:
+      ref:
+        description: "ref/وسم لقياس الانجراف تجاهه (افتراضيًّا آخر إصدار)"
+        required: false
+  repository_dispatch:
+    types: [language-release]   # يطلقه مستودع اللغة عند نشر إصدار
 
 permissions:
   contents: read
@@ -23,9 +30,22 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - run: pip install pyyaml
 
-      - name: تثبيت الاعتمادات
-        run: pip install pyyaml
+      - name: تحديد الـref (وسم الإصدار > مُدخَل يدويّ > آخر إصدار > dev)
+        id: ref
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          REF="${{ github.event.client_payload.tag }}"
+          [ -z "$REF" ] && REF="${{ github.event.inputs.ref }}"
+          if [ -z "$REF" ]; then
+            REF=$(gh api repos/sadlang/s-programming-language/releases/latest \
+                  --jq .tag_name 2>/dev/null || true)
+          fi
+          [ -z "$REF" ] && REF="dev"
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
+          echo "نقيس الانجراف تجاه: $REF"
 
       - name: فحص الانجراف
         id: check
@@ -33,22 +53,25 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set +e
-          python scripts/check_sync.py --json > report.json
+          python scripts/check_sync.py --ref "${{ steps.ref.outputs.ref }}" --json > report.json
           echo "drift=$?" >> "$GITHUB_OUTPUT"
           cat report.json
 
       - name: صياغة جسم القضيّة
         if: steps.check.outputs.drift == '1'
+        env:
+          MEASURED_REF: ${{ steps.ref.outputs.ref }}
         run: |
           python - <<'PY' > body.md
-          import json
+          import json, os
           r = json.load(open("report.json", encoding="utf-8"))
-          L = [f"رصد فحص المزامنة انجرافًا بين الدليل وكود اللغة "
-               f"(النسخة المُغطّاة: `{r.get('covers_version')}`).\n",
-               "يعني هذا أن مصادر تغيّرت في المستودع الرئيسيّ وقد لا يطابقها الدليل.\n"]
-          def sec(title, items):
+          ref = os.environ["MEASURED_REF"]
+          L = [f"رصد فحص المزامنة انجرافًا بين الدليل وكود اللغة عند **`{ref}`** "
+               f"(النسخة المُغطّاة في الدليل: `{r.get('covers_version')}`).\n",
+               "أي أن مصادر تغيّرت في اللغة وقد لا يطابقها الدليل بعد.\n"]
+          def sec(t, items):
               if items:
-                  L.append(f"### {title}")
+                  L.append(f"### {t}")
                   L.extend(f"- `{i}`" for i in items)
                   L.append("")
           sec("📝 مصادر تغيّرت", r["changed"])
@@ -57,8 +80,12 @@ jobs:
           sec("❓ مصادر متعذّر الوصول", r["missing"])
           sec("📚 فصول تحتاج مراجعة", r["affected_chapters"])
           L.append("---")
-          L.append("**بعد المراجعة:** حدّث الفصول ثم ثبّت الحالة بـ "
-                   "`python scripts/check_sync.py --update` والتزمها.")
+          ver = ref.lstrip("v") if ref != "dev" else ""
+          setver = f" --set-version {ver}" if ver else ""
+          L.append("**بعد مراجعة الفصول وتعديلها فعليًّا**، ثبّت الحالة (وارفع النسخة "
+                   "إن كان إصدارًا):")
+          L.append(f"```\npython scripts/check_sync.py --ref {ref}{setver} --update\n```")
+          L.append("> ملاحظة: حارس CI يرفض تثبيت القفل دون تعديل الفصل المرتبط فعليًّا.")
           L.append("\n<sub>أُنشئت آليًّا بوساطة workflow `sync-check`.</sub>")
           print("\n".join(L))
           PY
@@ -73,14 +100,13 @@ jobs:
                 --json number --jq '.[0].number')
           if [ -n "$NUM" ]; then
             gh issue edit "$NUM" --body-file body.md
-            gh issue comment "$NUM" --body "أُعيد رصد الانجراف في $(date -u +%F). حُدِّث الوصف."
+            gh issue comment "$NUM" --body "أُعيد رصد الانجراف في $(date -u +%F) تجاه \`${{ steps.ref.outputs.ref }}\`."
             echo "حُدِّثت القضيّة #$NUM"
           else
-            gh issue create --title "$TITLE" --body-file body.md \
-              --label documentation 2>/dev/null \
+            gh issue create --title "$TITLE" --body-file body.md --label documentation 2>/dev/null \
               || gh issue create --title "$TITLE" --body-file body.md
           fi
 
       - name: لا انجراف
         if: steps.check.outputs.drift == '0'
-        run: echo "✅ الدليل متزامن مع الكود."
+        run: echo "✅ الدليل متزامن مع ${{ steps.ref.outputs.ref }}."

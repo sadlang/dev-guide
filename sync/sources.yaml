@@ -6,21 +6,24 @@
 repo: sadlang/s-programming-language
 ref: dev
 
-# نسخة اللغة التي يغطّيها الدليل (حدّثها عند مراجعة شاملة بعد إصدار جديد)
+# نسخة اللغة التي يغطّيها الدليل (تُرفَع آليًّا عند مراجعة إصدار: --update --set-version)
 covers_version: "1.0.0"
 
+# صيغة المصدر: إمّا مسار نصّيّ (يُرصد أيّ تغيّر في الملف/المجلد كاملًا)،
+# أو كائن {path, lines: "بداية-نهاية"} لبصم نطاقٍ بعينه فقط — يقلّل الإنذارات
+# الكاذبة في الملفّات الكبيرة ويرصد «تعفّن» المنطقة الموثَّقة تحديدًا.
 chapters:
   - file: src/frontend/lexer.md
     sources:
-      - shared/lexer/src/lexer_core.cpp
+      - { path: shared/lexer/src/lexer_core.cpp, lines: "100-1770" }  # peek→nextToken→الماسحات
       - shared/lexer/include/token.h
       - shared/lexer/src/lexer_keywords.cpp
       - language-truth/keywords.yaml
 
   - file: src/frontend/parser.md
     sources:
-      - shared/parser/src/core/parser_main.cpp
-      - shared/parser/src/core/parser_expressions.cpp
+      - { path: shared/parser/src/core/parser_main.cpp, lines: "40-1500" }       # التهيئة→الموزّعات
+      - { path: shared/parser/src/core/parser_expressions.cpp, lines: "45-1130" } # سلسلة الأسبقيّة
       - shared/parser/include/parser_core.h
       - language-truth/operators.yaml
 
@@ -40,6 +43,12 @@ chapters:
     sources:
       - compiler/src/backend/llvm
 
+  - file: src/backend/vm.md
+    sources:
+      - vm/include/sad_vm_opcodes.h
+      - vm/include/sad_vm_executor.h
+      - vm/src/sad_vm_executor.cpp
+
   - file: src/systems/types.md
     sources:
       - shared/types/include/value.h
@@ -54,6 +63,11 @@ chapters:
     sources:
       - language-truth/builtins
       - interpreter/src/builtins
+
+  - file: src/sot/philosophy.md
+    sources:
+      - language-truth/_schemas
+      - scripts/codegen
 
   - file: src/sot/language-truth.md
     sources:

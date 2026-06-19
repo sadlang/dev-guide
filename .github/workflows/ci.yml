@@ -39,3 +39,27 @@ jobs:
         with:
           args: --offline --no-progress "book/**/*.html"
           fail: true
+
+  # حُرّاس نظام المزامنة: سلامة البيان + منع «الكتم الصامت» للقفل
+  sync-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: جلب المستودع (بكامل التاريخ)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pyyaml
+
+      - name: (د) حارس سلامة البيان (بلا شبكة)
+        run: python scripts/check_sync.py --validate
+
+      - name: (أ) حارس القفل — لا تثبيت بصمةٍ دون مراجعة فصلها
+        run: |
+          BASE="origin/${{ github.base_ref }}"
+          git show "$BASE:sync/sources.lock.json" > base.lock.json 2>/dev/null || : > base.lock.json
+          git diff --name-only "$BASE"...HEAD > changed.txt
+          python scripts/check_sync.py --guard-lock --base base.lock.json --changed-files changed.txt

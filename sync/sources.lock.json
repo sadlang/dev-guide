@@ -22,11 +22,14 @@
     "shared/ast/include/ast_visitor.h": "cee84846d4097724c8d62c13f036d6fc1686ee6f",
     "shared/errors/include/error_codes.h": "f3be2d763567d8381002ee1ed4f5ff9176b8a05a",
     "shared/lexer/include/token.h": "932c37e4ca3027dac37877d4004526db2020256c",
-    "shared/lexer/src/lexer_core.cpp": "19b3dc07de0070c931ae1443df383d4c5cdb1858",
+    "shared/lexer/src/lexer_core.cpp#L100-1770": "sha256:0ffcbb9c3158f41d",
     "shared/lexer/src/lexer_keywords.cpp": "9daca47444923442007e3089e528f5966c6f8f91",
     "shared/parser/include/parser_core.h": "c11b333988e48c5b984ffe5b6c42397cc01aa575",
-    "shared/parser/src/core/parser_expressions.cpp": "dfde92b60d3de4798a5738774016ea6d3da4a07a",
-    "shared/parser/src/core/parser_main.cpp": "8506c32ba56720300685025941933f87fc2d9daf",
-    "shared/types/include/value.h": "9b40909fd452fac4e27e41aed85852020f2af1e6"
+    "shared/parser/src/core/parser_expressions.cpp#L45-1130": "sha256:31ffeca3254dab10",
+    "shared/parser/src/core/parser_main.cpp#L40-1500": "sha256:3ae6310f5ebc9df6",
+    "shared/types/include/value.h": "9b40909fd452fac4e27e41aed85852020f2af1e6",
+    "vm/include/sad_vm_executor.h": "2a9c74f182c5d76643b58dfd036877ad03ad97c1",
+    "vm/include/sad_vm_opcodes.h": "8b92d998a5a26d3b9716d25bd6dee8a61a5fca4d",
+    "vm/src/sad_vm_executor.cpp": "76a1d059b635ebc6a3d55f0fb9b75c95fa2984a7"
   }
 }
