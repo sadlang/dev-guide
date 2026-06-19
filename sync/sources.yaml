@@ -1,0 +1,78 @@
+# ============================================================================
+# بيان المزامنة: يربط كل فصل في الدليل بمصادره في مستودع اللغة.
+# يستخدمه scripts/check_sync.py لكشف انجراف الدليل عن الكود عند تطوّر اللغة.
+# عند تغيّر أي مصدر (sha)، يُنبَّه إلى مراجعة الفصول المرتبطة به.
+# ============================================================================
+repo: sadlang/s-programming-language
+ref: dev
+
+# نسخة اللغة التي يغطّيها الدليل (حدّثها عند مراجعة شاملة بعد إصدار جديد)
+covers_version: "1.0.0"
+
+chapters:
+  - file: src/frontend/lexer.md
+    sources:
+      - shared/lexer/src/lexer_core.cpp
+      - shared/lexer/include/token.h
+      - shared/lexer/src/lexer_keywords.cpp
+      - language-truth/keywords.yaml
+
+  - file: src/frontend/parser.md
+    sources:
+      - shared/parser/src/core/parser_main.cpp
+      - shared/parser/src/core/parser_expressions.cpp
+      - shared/parser/include/parser_core.h
+      - language-truth/operators.yaml
+
+  - file: src/frontend/ast.md
+    sources:
+      - shared/ast/include/ast_visitor.h
+
+  - file: src/backend/interpreter.md
+    sources:
+      - interpreter/include/core/interpreter_core.h
+
+  - file: src/backend/sir.md
+    sources:
+      - compiler/include/frontend/sir_types.h
+
+  - file: src/backend/llvm.md
+    sources:
+      - compiler/src/backend/llvm
+
+  - file: src/systems/types.md
+    sources:
+      - shared/types/include/value.h
+      - language-truth/types.yaml
+
+  - file: src/systems/errors.md
+    sources:
+      - shared/errors/include/error_codes.h
+      - language-truth/errors
+
+  - file: src/systems/builtins.md
+    sources:
+      - language-truth/builtins
+      - interpreter/src/builtins
+
+  - file: src/sot/language-truth.md
+    sources:
+      - language-truth
+      - language-truth/_schemas
+
+  - file: src/sot/codegen.md
+    sources:
+      - scripts/codegen
+
+  - file: src/sot/grammar-sot.md
+    sources:
+      - language-truth/grammar
+      - scripts/codegen/gen_parser_grammar_docs.py
+
+  - file: src/contributing/workflow.md
+    sources:
+      - .github/BRANCH_PROTECTION_POLICY.md
+
+  - file: src/contributing/governance.md
+    sources:
+      - .github/skills/sad-lang-dev/references/governance.md

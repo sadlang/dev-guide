@@ -1,0 +1,32 @@
+{
+  "covers_version": "1.0.0",
+  "ref": "dev",
+  "repo": "sadlang/s-programming-language",
+  "sources": {
+    ".github/BRANCH_PROTECTION_POLICY.md": "1f9bef01c1d299b277f3e372f5c8a18be5b6d9f0",
+    ".github/skills/sad-lang-dev/references/governance.md": "9d6d0e8524cf7c27820fc0f6f25167ab2d702ed3",
+    "compiler/include/frontend/sir_types.h": "2baeea3b731a20b960fd3253c708cb04de75d0cd",
+    "compiler/src/backend/llvm": "437febfb29d0260f66a2109526cbc914f8eab70e",
+    "interpreter/include/core/interpreter_core.h": "031ec8bc4b77e628b67615c7680897387fe821cc",
+    "interpreter/src/builtins": "a6699522fd97b4053bc4b6d39c8ad3ca7ba2e17c",
+    "language-truth": "13c2e41986f2a5d7b2e4897efd593d295d14e909",
+    "language-truth/_schemas": "bca3eaef4997d6318feeeb4c80dafa44c454024c",
+    "language-truth/builtins": "870a0daee27d07cac40aee70659b2afeb4884c80",
+    "language-truth/errors": "1225323dae85f68a5b4658012b80ae6e58a61583",
+    "language-truth/grammar": "efd940df914c0cb125e13f4ee9590fb5c7e677ec",
+    "language-truth/keywords.yaml": "64bb3292e235b268228792c5e1fc49d1e220e56e",
+    "language-truth/operators.yaml": "1b8aa3bc7fbf6269e7914f2e915612c1ca5ffe65",
+    "language-truth/types.yaml": "23e4b8e9c136aa4f5b950dfff342fa8ffc509958",
+    "scripts/codegen": "46007defa1b88d4aad0809aecb15803c896019fb",
+    "scripts/codegen/gen_parser_grammar_docs.py": "aaba9f37bd6d31cf0fcb190190c49fe742ad41c3",
+    "shared/ast/include/ast_visitor.h": "cee84846d4097724c8d62c13f036d6fc1686ee6f",
+    "shared/errors/include/error_codes.h": "f3be2d763567d8381002ee1ed4f5ff9176b8a05a",
+    "shared/lexer/include/token.h": "932c37e4ca3027dac37877d4004526db2020256c",
+    "shared/lexer/src/lexer_core.cpp": "19b3dc07de0070c931ae1443df383d4c5cdb1858",
+    "shared/lexer/src/lexer_keywords.cpp": "9daca47444923442007e3089e528f5966c6f8f91",
+    "shared/parser/include/parser_core.h": "c11b333988e48c5b984ffe5b6c42397cc01aa575",
+    "shared/parser/src/core/parser_expressions.cpp": "dfde92b60d3de4798a5738774016ea6d3da4a07a",
+    "shared/parser/src/core/parser_main.cpp": "8506c32ba56720300685025941933f87fc2d9daf",
+    "shared/types/include/value.h": "9b40909fd452fac4e27e41aed85852020f2af1e6"
+  }
+}

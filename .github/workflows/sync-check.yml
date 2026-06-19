@@ -1,0 +1,86 @@
+# ============================================================================
+# فحص مزامنة الدليل مع كود اللغة (drift detection)
+# يعمل أسبوعيًّا + يدويًّا. عند رصد انجراف يفتح/يحدّث قضيّة تُلخّص الفصول المتأثّرة.
+# المصدر الموحّد للربط: sync/sources.yaml — المنطق في scripts/check_sync.py
+# ============================================================================
+name: sync-check
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"      # كل اثنين 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: تثبيت الاعتمادات
+        run: pip install pyyaml
+
+      - name: فحص الانجراف
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          python scripts/check_sync.py --json > report.json
+          echo "drift=$?" >> "$GITHUB_OUTPUT"
+          cat report.json
+
+      - name: صياغة جسم القضيّة
+        if: steps.check.outputs.drift == '1'
+        run: |
+          python - <<'PY' > body.md
+          import json
+          r = json.load(open("report.json", encoding="utf-8"))
+          L = [f"رصد فحص المزامنة انجرافًا بين الدليل وكود اللغة "
+               f"(النسخة المُغطّاة: `{r.get('covers_version')}`).\n",
+               "يعني هذا أن مصادر تغيّرت في المستودع الرئيسيّ وقد لا يطابقها الدليل.\n"]
+          def sec(title, items):
+              if items:
+                  L.append(f"### {title}")
+                  L.extend(f"- `{i}`" for i in items)
+                  L.append("")
+          sec("📝 مصادر تغيّرت", r["changed"])
+          sec("➕ مصادر أُضيفت", r["added"])
+          sec("➖ مصادر حُذفت/نُقلت", r["removed"])
+          sec("❓ مصادر متعذّر الوصول", r["missing"])
+          sec("📚 فصول تحتاج مراجعة", r["affected_chapters"])
+          L.append("---")
+          L.append("**بعد المراجعة:** حدّث الفصول ثم ثبّت الحالة بـ "
+                   "`python scripts/check_sync.py --update` والتزمها.")
+          L.append("\n<sub>أُنشئت آليًّا بوساطة workflow `sync-check`.</sub>")
+          print("\n".join(L))
+          PY
+
+      - name: فتح/تحديث قضيّة الانجراف
+        if: steps.check.outputs.drift == '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TITLE="🔄 انجراف الدليل عن كود اللغة"
+          NUM=$(gh issue list --state open --search "$TITLE in:title" \
+                --json number --jq '.[0].number')
+          if [ -n "$NUM" ]; then
+            gh issue edit "$NUM" --body-file body.md
+            gh issue comment "$NUM" --body "أُعيد رصد الانجراف في $(date -u +%F). حُدِّث الوصف."
+            echo "حُدِّثت القضيّة #$NUM"
+          else
+            gh issue create --title "$TITLE" --body-file body.md \
+              --label documentation 2>/dev/null \
+              || gh issue create --title "$TITLE" --body-file body.md
+          fi
+
+      - name: لا انجراف
+        if: steps.check.outputs.drift == '0'
+        run: echo "✅ الدليل متزامن مع الكود."

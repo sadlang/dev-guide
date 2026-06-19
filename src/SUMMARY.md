@@ -48,6 +48,7 @@
 - [سير عمل الفروع (dev · worktrees · PR)](contributing/workflow.md)
 - [معيار الإنجاز (Definition of Done)](contributing/definition-of-done.md)
 - [نظام الحوكمة (BMAD)](contributing/governance.md)
+- [مزامنة الدليل مع تطوّر اللغة (Freshness)](contributing/freshness.md)
 
 ---
 
