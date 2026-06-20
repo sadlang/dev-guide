@@ -8,6 +8,7 @@
     "compiler/include/frontend/sir_types.h": "2baeea3b731a20b960fd3253c708cb04de75d0cd",
     "compiler/src/backend/llvm": "32d6a3cc07ebf51e3f2fa2933afb92f99143d06f",
     "interpreter/include/core/interpreter_core.h": "031ec8bc4b77e628b67615c7680897387fe821cc",
+    "interpreter/include/visitors/expression_evaluator.h": "a6e90c03cb75de00525fd7888bb61c91d57aa2fc",
     "interpreter/src/builtins": "a6699522fd97b4053bc4b6d39c8ad3ca7ba2e17c",
     "language-truth": "13c2e41986f2a5d7b2e4897efd593d295d14e909",
     "language-truth/_schemas": "bca3eaef4997d6318feeeb4c80dafa44c454024c",

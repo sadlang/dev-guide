@@ -34,6 +34,8 @@ chapters:
   - file: src/backend/interpreter.md
     sources:
       - interpreter/include/core/interpreter_core.h
+      - interpreter/include/visitors/expression_evaluator.h
+      - shared/ast/include/ast_visitor.h
 
   - file: src/backend/sir.md
     sources:
