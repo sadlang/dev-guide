@@ -66,6 +66,8 @@ chapters:
   - file: src/systems/errors.md
     sources:
       - shared/errors/include/error_codes.h
+      - shared/errors/include/error_manager.h
+      - scripts/codegen/gen_error_messages.py
       - language-truth/errors
 
   - file: src/systems/builtins.md
