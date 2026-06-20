@@ -49,8 +49,17 @@ chapters:
       - vm/include/sad_vm_executor.h
       - vm/src/sad_vm_executor.cpp
 
+  - file: src/systems/memory.md
+    sources:
+      - shared/memory_policy/include/memory/policy/gc_mode.h
+      - shared/memory_policy/include/memory/policy/memory_mode_flag.h
+      - shared/memory_policy/src/memory_mode_flag.cpp
+
   - file: src/systems/types.md
     sources:
+      - shared/types/include/sad_type_system.h
+      - shared/types/generated/sad_type_kind_generated.h
+      - shared/types/include/type_bridge.h
       - shared/types/include/value.h
       - language-truth/types.yaml
 

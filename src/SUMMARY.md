@@ -39,7 +39,8 @@
 
 # الجزء السادس · أنظمة اللغة
 
-- [نظام الأنواع (Value / SadType)](systems/types.md)
+- [نظام الذاكرة (ذاكرة ص الذكية)](systems/memory.md)
+- [نظام الأنواع وفاحص الأنواع](systems/types.md)
 - [نظام الأخطاء والتشخيص](systems/errors.md)
 - [الدوال المضمنة والوحدات](systems/builtins.md)
 
