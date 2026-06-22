@@ -2,21 +2,25 @@
 
 > **ماذا ستتعلّم:** كيف تُمثَّل الأنواع في لغة ص — من تعداد `SadTypeKind` المولَّد عن
 > مصدر الحقيقة، إلى هرم أصناف `SadType`، إلى علاقات الفحص (تطابق · إسناد · نوع‑فرعيّ ·
-> إكراه)، والجسر بين النوع الثابت والقيمة وقت التشغيل.
+> إكراه)، وكيف تُمثَّل القيمة الحيّة عبر عالَمَي التنفيذ، **وكيف يتشابك نظام الأنواع مع
+> بقيّة الأنظمة — وعلى رأسها نظام الأخطاء.**
 
-> 📎 المصدر: [`shared/types/include/sad_type_system.h`](https://github.com/sadlang/s-programming-language/blob/dev/shared/types/include/sad_type_system.h) · [`sad_type_kind_generated.h`](https://github.com/sadlang/s-programming-language/blob/dev/shared/types/generated/sad_type_kind_generated.h) · [`type_bridge.h`](https://github.com/sadlang/s-programming-language/blob/dev/shared/types/include/type_bridge.h) · [`value.h`](https://github.com/sadlang/s-programming-language/blob/dev/shared/types/include/value.h)
+> 📎 المصدر: [`sad_type_system.h`](https://github.com/sadlang/s-programming-language/blob/dev/shared/types/include/sad_type_system.h) · [`sad_type_kind_generated.h`](https://github.com/sadlang/s-programming-language/blob/dev/shared/types/generated/sad_type_kind_generated.h) · [`value.h`](https://github.com/sadlang/s-programming-language/blob/dev/shared/types/include/value.h) · [`sir_types.h`](https://github.com/sadlang/s-programming-language/blob/dev/compiler/include/frontend/sir_types.h)
 
-## النوع الثابت مقابل القيمة الحيّة
+## نظام واحد، لا جسر
 
-تمييزان لا يلتبسان:
+> ✅ **بعد التوحيد (RFC sadlang/rfcs#8):** نظام النوع **واحد** هو `SadTypeKind`/`SadType`.
+> أُزيلت السقالة الانتقالية بالكامل: `type_bridge` و`SadValue` المهجور و`ValueType`
+> التوافقيّ و`DataType` — لا تبحث عنها. القيمة الحيّة `Value` تعتمد `SadType` مباشرةً.
+
+تمييزٌ واحد لا يلتبس:
 
 | | يمثّل | أين | المصدر |
 |--|------|-----|--------|
-| **`SadTypeKind` / `SadType`** | النوع **الثابت** (وقت الترجمة/الفحص) | المحلّل + الدلالات + SIR | `sad_type_system.h` |
-| **`Value`** | القيمة **الحيّة** (وقت التشغيل) | المفسّر | `value.h` |
+| **`SadTypeKind` / `SadType`** | النوع **الثابت** (وقت الترجمة/الفحص) | المحلّل + الدلالات + SIR + المفسّر | `sad_type_system.h` |
+| **`Value`** | القيمة **الحيّة** (وقت التشغيل) — تحمل `SadTypeKind`+`SadTypePtr` بداخلها | المفسّر | `value.h` |
 
-النوع يُجيب «ما الذي يَصلُح؟»، والقيمة تُجيب «ما الموجود الآن؟». الجسر بينهما (`type_bridge`)
-هو ما يحوّل أحدهما للآخر.
+النوع يُجيب «ما الذي يَصلُح؟»، والقيمة تُجيب «ما الموجود الآن؟» — وكلاهما يدور حول محورٍ واحد.
 
 ## ① مصدر الحقيقة: `SadTypeKind` (مولَّد)
 
@@ -29,7 +33,7 @@ flowchart LR
   GEN --> SYS["sad_type_system.h<br/>الأصناف + الدوال"]
   SYS --> AST["AST + الدلالات"]
   SYS --> SIR["SIR / المترجم"]
-  SYS --> INT["المفسّر (عبر الجسر)"]
+  SYS --> INT["المفسّر (Value)"]
 ```
 
 القيم موزَّعة على عائلات: **أوّليّة** (Void · Integer · Float · Boolean · String · Byte · Char) ·
@@ -40,7 +44,8 @@ flowchart LR
 **واجهة/رسوميّات** (Color · Widget · Window · Event · Vector · Point · Rect).
 
 > 💡 العربيّة/الإنجليزيّة ليست تعليقًا فحسب: `sadTypeKindToArabic()` و`sadTypeKindToEnglish()`
-> تُرجعان الاسمين رسميًّا — فالنوع يُطبَع بلغة المستخدم.
+> تُرجعان الاسمين رسميًّا — فالنوع يُطبَع بلغة المستخدم، وهذا بذاته يغذّي **نظام الأخطاء**
+> برسائلَ نوعٍ ثنائيّة اللغة.
 
 ## ② هرم الأصناف: `SadType`
 
@@ -67,18 +72,22 @@ classDiagram
   SadType <|-- SadSpecialType
   SadType <|-- SadArrayType
   SadType <|-- SadMapType
+  SadType <|-- SadTupleType
+  SadType <|-- SadFunctionType
+  SadType <|-- SadClassType
   SadType <|-- SadOptionalType
   SadType <|-- SadResultType
   SadType <|-- SadUnionType
-  SadType <|-- SadTypeAlias
+  SadType <|-- SadGenericType
   SadArrayType : +getElementType()
   SadMapType : +getKeyType() / getValueType()
-  SadOptionalType : +innerType (S-TS-P3)
-  SadResultType : +ok / err (S-TS-P3)
+  SadOptionalType : +innerType
+  SadResultType : +ok / err
 ```
 
 كلّ صنفٍ يَفحص **التساوي البنيويّ** صحيحًا: `مصفوفة<عدد>` تساوي `مصفوفة<عدد>` لا
-`مصفوفة<نص>` (يقارن `getElementType()`، لا الـ`kind` وحده).
+`مصفوفة<نص>` (يقارن `getElementType()`، لا الـ`kind` وحده). و`SadTypeRegistry` (Singleton)
+يَختزن (interning) الأنواع المركّبة فتصير مقارنة المؤشّر `==` صحيحةً للمتماثلة بنيويًّا.
 
 ## ③ التصنيفات السريعة
 
@@ -96,7 +105,8 @@ classDiagram
 
 ## ④ علاقات الفحص — قلب «فاحص الأنواع»
 
-عند فحص إسنادٍ أو تمرير وسيطٍ أو إرجاع، يسأل الفاحص أربعة أسئلة متدرّجة الصرامة:
+عند فحص إسنادٍ أو تمرير وسيطٍ أو إرجاع، يسأل الفاحص أربعة أسئلة متدرّجة الصرامة، وآخر
+المطاف عند الفشل هو **نظام الأخطاء**:
 
 ```mermaid
 flowchart TD
@@ -108,45 +118,103 @@ flowchart TD
   ASG -- نعم --> OK
   ASG -- لا --> CO{"coercesTo(s,t)؟<br/>إكراه ضمنيّ (مثل عدد→عشريّ)"}
   CO -- نعم --> WARN["✅ بإكراه ضمنيّ"]
-  CO -- لا --> ERR["❌ خطأ نوع → نظام الأخطاء"]
+  CO -- لا --> ERR["❌ خطأ نوع دلاليّ (SEM)<br/>→ ErrorManager.reportError"]
+  ERR -.-> ERRSYS["نظام الأخطاء"]
+  click ERRSYS "errors.html" "اذهب إلى نظام الأخطاء"
 ```
 
 - **`equals`** — تطابقٌ تامّ (يقارن `kind` والمعاملات).
 - **`isSubtypeOf`** — العلاقة الفرعيّة (الافتراضيّ `equals`، تُوسَّع للأصناف/السمات).
 - **`isAssignableTo`** — هل يَصِحّ الإسناد؟ (مثلًا `T` إلى `اختياري<T>`، أو أيّ نوعٍ إلى `Any`).
-- **`coercesTo`** — التحويل الضمنيّ المسموح (مثل عدد → عشريّ). الفشل هنا ⇒ **خطأ نوع**
-  يُبلَّغ عبر [نظام الأخطاء](errors.md).
+- **`coercesTo`** — التحويل الضمنيّ المسموح (مثل عدد → عشريّ). الفشل هنا ⇒ **خطأ نوع**.
 
-## ⑤ الجسر: `type_bridge` — من النوع إلى القيمة والعكس
+## ⑤ القيمة الحيّة عبر عالَمَي التنفيذ
 
-[`type_bridge.h`](https://github.com/sadlang/s-programming-language/blob/dev/shared/types/include/type_bridge.h) يصِل النوع الثابت بالقيمة الحيّة عبر ثلاث طبقات:
+النوع واحد، لكن **القيمة** لها تمثيلان لأن للّغة عالَمَي تنفيذ منفصلين — وهذا فصلٌ مقصود لا ازدواج:
 
-| القسم | التحويل | الاستعمال |
-|-------|---------|-----------|
-| ① | `SadTypeKind ↔ ValueType` (تعداد ↔ تعداد) | سريع وخفيف، بلا تخصيص |
-| ② | `SadTypePtr ↔ ValueType` (نوع ذكيّ ↔ تعداد) | `sadTypeToValueType` / `sadTypeFromValueType` |
-| ③ | `Value → SadTypePtr` (قيمة كاملة ← نوع) | استنتاج نوع قيمةٍ حيّة |
+```mermaid
+flowchart TD
+  SRC["قيمة في برنامج .ص<br/>(مثلاً 42)"] --> Q{أداة التشغيل}
+  Q -->|sad-run| V["Value (صنف C++)<br/>SadTypeKind + SadTypePtr + variant"]
+  Q -->|sad-build| C["SadValue (struct C)<br/>tag + union — في الثنائيّ الناتج"]
+  V --> INT["تنفيذ المفسّر مباشرةً"]
+  C --> BIN["تشغيل الثنائيّ native"]
+```
 
-> ⚙️ **توحيدٌ مهمّ (S-TS-P2.5b):** التمثيل الأفقر `DataType` **أُزيل بالكامل** بعد ترحيل
-> الـAST والمحلّل والدلالات إلى `SadTypeKind`. لا تُدخِل `toDataType/fromDataType` —
-> صفر مستهلك، والنظام الموحَّد هو `SadTypeKind` وحده.
+| | `Value` | `SadValue` (وقت تشغيل الثنائيّ) |
+|--|---------|-------------------------------|
+| العالَم | المفسّر (`sad-run`) | الثنائيّ المُترجَم |
+| اللغة | صنف C++ (`shared/types/value.h`) | `struct` C (`compiler/.../llvm_runtime.h`) |
+| النوع | `SadTypeKind` + `SadTypePtr` | وسم `tag` |
 
-## ⑥ أين يُستهلَك الفاحص؟
+> ⚠️ لا يلتقيان في الذاكرة: برنامجٌ بالمفسّر لا يلمس `SadValue`، وثنائيٌّ مُترجَم لا يلمس
+> `Value`. الاسمان متشابهان والكيانان منفصلان (تصادُم اسمٍ لا أكثر).
 
-`sad_type_system.h` يُضمَّن عبر المفسّر والمترجم معًا:
+## ⑥ علاقة نظام الأنواع ببقيّة الأنظمة
+
+نظام الأنواع محورٌ تتشابك حوله أغلب الأنظمة. هذه خريطة العلاقات:
+
+```mermaid
+flowchart TB
+  TS(("نظام الأنواع<br/>SadTypeKind / SadType")):::core
+
+  SOT["مصدر الحقيقة<br/>types.yaml"] -->|يولّد| TS
+  LEX["المحلّل المعجمي"] -->|مُعرّفات نوع سياقيّة<br/>(رقم/نص…)| TS
+  PARSE["المحلّل النحوي + AST"] -->|عُقد تحمل SadTypeKind| TS
+  TS -->|قرارات الفحص| SEM["الدلالات / فاحص الأنواع"]
+  SEM -->|فشل فحص ⇒ SEM xxx| ERR["نظام الأخطاء"]:::err
+  TS -->|isCopyable / lifetimeName| MEM["نظام الذاكرة (الملكيّة)"]
+  MEM -->|انتهاكات ⇒ ownership xxx| ERR
+  TS -->|نوع موحَّد| INT["المفسّر (Value)"]
+  TS -->|نوع موحَّد| SIR["SIR → LLVM"]
+  INT -->|أخطاء نوع وقت التشغيل ⇒ RUN xxx| ERR
+  TS --> BUILTIN["الدوال المضمنة<br/>(تواقيع + إكراه الوسائط)"]
+  BUILTIN -->|وسيط غير متوافق ⇒ خطأ| ERR
+
+  classDef core fill:#1864ab22,stroke:#1864ab,stroke-width:2px;
+  classDef err fill:#c92a2a22,stroke:#c92a2a,stroke-width:2px;
+```
+
+| النظام | كيف يتعلّق بنظام الأنواع |
+|--------|---------------------------|
+| [مصدر الحقيقة](../sot/language-truth.md) | يولّد تعداد الأنواع كلّه — لا نوع خارج `types.yaml` |
+| [المحلّل المعجمي](../frontend/lexer.md) | أسماء الأنواع (`رقم`/`نص`…) **مُعرّفات سياقيّة** لا كلماتٌ محجوزة |
+| [المحلّل النحوي/AST](../frontend/ast.md) | عُقد التصريحات تحمل `SadTypeKind` مباشرةً (لا تمثيل وسيط) |
+| [نظام الأخطاء](errors.md) | **الوجهة النهائيّة لكل فشل نوعٍ** — انظر §⑦ |
+| [نظام الذاكرة](memory.md) | `isCopyable`/`lifetimeName`/`isMutable` تقود الملكيّة وحركة القيم |
+| [المفسّر](../backend/interpreter.md) | `Value` تحمل النوع؛ التحميل الزائد والاستدعاءات تتشاور مع `SadType` |
+| [SIR/المترجم](../backend/sir.md) | يبني أنواعه على `SadTypeKind` نفسه ⇒ سلوك موحَّد بين التفسير والترجمة |
+| [الدوال المضمنة](builtins.md) | تواقيعها تُفحَص وتُكرَه وسائطها عبر `SadType` |
+
+## ⑦ نظام الأنواع ⟷ نظام الأخطاء (العلاقة المحوريّة)
+
+كل فشل نوعٍ ينتهي **رمزَ خطأٍ مكتلَجًا** يُطلَق عبر `ErrorManager` — لا نصًّا حرًّا. والطورُ
+الذي يُكتشَف فيه الفشل يحدّد **نطاق الرمز**:
 
 ```mermaid
 flowchart LR
-  TS["sad_type_system.h"] --> EVAL["زوّار المفسّر<br/>expression_evaluator_* · statement_executor_*"]
-  TS --> SIR["compiler/include/frontend/sir_types.h"]
-  EVAL --> RT["قرارات وقت التشغيل<br/>(تحميل زائد · استدعاءات · ثنائيّات)"]
-  SIR --> LLVM["توليد LLVM"]
+  subgraph TYPE["قرار نوعٍ فاشل"]
+    A["إسناد/تمرير غير متوافق<br/>(coercesTo=false)"]
+    B["متغيّر/دالة بلا نوع معروف"]
+    C["إسناد عدمٍ لغير اختياريّ<br/>(Optional/Null)"]
+    D["عمليّة على نوعٍ خاطئ<br/>وقت التشغيل"]
+  end
+  A -->|طور دلاليّ| SEM["SEM xxx<br/>(Semantic)"]
+  B -->|طور دلاليّ| SEM
+  C -->|أمان null| SEM
+  D -->|طور تشغيل| RUN["RUN xxx<br/>(Runtime)"]
+  SEM --> EM["ErrorManager<br/>reportError(code, موقع, قوالب)"]
+  RUN --> EM
+  EM --> OUT["تشخيص ثنائيّ اللغة<br/>(عربيّ/إنجليزيّ) + موقع + تلميح إصلاح"]
 ```
 
-- **المفسّر:** التحميل الزائد للعوامل (`expression_evaluator_overloads`)، الاستدعاءات
-  (`..._calls_*`)، والعمليّات الثنائيّة (`..._binary_ops`) كلّها تتشاور مع `SadType`.
-- **المترجم:** [SIR](../backend/sir.md) يبني أنواعه على `SadTypeKind` نفسه ⇒ سلوكٌ موحَّد
-  بين التفسير والترجمة.
+- **النوع يصف، الخطأ يبلِّغ:** يستعمل التشخيص أسماء الأنواع (`arabicName()`/`englishName()`)
+  لبناء رسالةٍ مفهومةٍ بلغة المستخدم (مثل «متوقَّع `نص` لكن وُجد `رقم`»).
+- **الطور يحدّد النطاق:** فشلٌ يُكتشَف في الدلالات ⇒ `SEM`؛ يُكتشَف وقت التشغيل ⇒ `RUN`.
+  (راجع نطاقات `ErrorCode` في [نظام الأخطاء](errors.md#②-التصنيف-والنطاقات-errorcode).)
+- **أمان null جزءٌ من العلاقة:** أنواع `Optional`/`Null` تُحوِّل «الوصول لعدمٍ محتمل» إلى
+  تشخيصٍ مبكّر بدل انهيارٍ صامت.
+- **لا نصّ حرّ:** يُمنع `throw std::runtime_error("…")` لأخطاء النوع — أطلِق `ErrorCode` دومًا.
 
 ## ملاحظات للمطوّر
 
@@ -154,6 +222,8 @@ flowchart LR
   [المحلل المعجمي](../frontend/lexer.md).
 - القسمة `/` تُعطي عشريًّا دائمًا — استخدم `رقم(ن/م)` للقسمة الصحيحة.
 - لإضافة نوعٍ جديد: **حرِّر `types.yaml` ثم أعد التوليد** — لا تَلمس `sad_type_kind_generated.h`.
+- لا تَبحث عن `type_bridge`/`ValueType`/`DataType`/`SadValue`(C++): أُزيلت بالتوحيد
+  (RFC sadlang/rfcs#8). المحور الوحيد `SadTypeKind`.
 
 ## مرجع SoT
 
