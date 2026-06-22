@@ -95,8 +95,8 @@ classDiagram
 
 | الدالة | تصدُق على |
 |--------|-----------|
-| `isPrimitiveKind(k)` | الأوّليّات (عدد، عشريّ، منطقيّ، نصّ، بايت، حرف، فراغ) |
-| `isNumericKind(k)` | العدديّة (Integer · Float · Byte) |
+| `isPrimitiveKind(k)` | الأوّليّات (عدد، عشريّ، منطقيّ، نصّ، بايت، حرف، فراغ) + الأوّليّات محدَّدة الحجم (`Int8…Char`) |
+| `isNumericKind(k)` | العدديّة (Integer · Float · Byte) + العدديّة محدَّدة الحجم (`Int8…Float64`) |
 | `isCompositeKind(k)` | المركّبة (Array · Map · Tuple · Struct · Class…) |
 | `isCallableKind(k)` | القابلة للاستدعاء (Function · Closure) |
 
@@ -136,7 +136,7 @@ flowchart TD
 flowchart TD
   SRC["قيمة في برنامج .ص<br/>(مثلاً 42)"] --> Q{أداة التشغيل}
   Q -->|sad-run| V["Value (صنف C++)<br/>SadTypeKind + SadTypePtr + variant"]
-  Q -->|sad-build| C["SadValue (struct C)<br/>tag + union — في الثنائيّ الناتج"]
+  Q -->|sad-build| C["SadValue (struct C)<br/>type + union — في الثنائيّ الناتج"]
   V --> INT["تنفيذ المفسّر مباشرةً"]
   C --> BIN["تشغيل الثنائيّ native"]
 ```
@@ -145,7 +145,7 @@ flowchart TD
 |--|---------|-------------------------------|
 | العالَم | المفسّر (`sad-run`) | الثنائيّ المُترجَم |
 | اللغة | صنف C++ (`shared/types/value.h`) | `struct` C (`compiler/.../llvm_runtime.h`) |
-| النوع | `SadTypeKind` + `SadTypePtr` | وسم `tag` |
+| النوع | `SadTypeKind` + `SadTypePtr` | وسم `type` |
 
 > ⚠️ لا يلتقيان في الذاكرة: برنامجٌ بالمفسّر لا يلمس `SadValue`، وثنائيٌّ مُترجَم لا يلمس
 > `Value`. الاسمان متشابهان والكيانان منفصلان (تصادُم اسمٍ لا أكثر).
@@ -159,7 +159,7 @@ flowchart TB
   TS(("نظام الأنواع<br/>SadTypeKind / SadType")):::core
 
   SOT["مصدر الحقيقة<br/>types.yaml"] -->|يولّد| TS
-  LEX["المحلّل المعجمي"] -->|مُعرّفات نوع سياقيّة<br/>(رقم/نص…)| TS
+  LEX["المحلّل المعجمي"] -->|"مُعرّفات نوع سياقيّة<br/>رقم · نص …"| TS
   PARSE["المحلّل النحوي + AST"] -->|عُقد تحمل SadTypeKind| TS
   TS -->|قرارات الفحص| SEM["الدلالات / فاحص الأنواع"]
   SEM -->|فشل فحص ⇒ SEM xxx| ERR["نظام الأخطاء"]:::err
