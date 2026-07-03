@@ -81,12 +81,13 @@ flowchart TD
 
 | العقدة | الحقول |
 |---|---|
-| `ListComprehensionExpr` | `element`، `variable`، `iterable`، `condition` |
-| `SetComprehensionExpr` | `expression`، `variable`، `iterable`، `condition` |
-| `DictComprehensionExpr` | `key`، `value`، `variable`، `iterable`، `condition` |
+| `ListComprehensionExpr` | `element`، `variable`، `valueVariable`، `iterable`، `condition` |
+| `SetComprehensionExpr` | `expression`، `variable`، `valueVariable`، `iterable`، `condition` |
+| `DictComprehensionExpr` | `key`، `value`، `variable`، `valueVariable`، `iterable`، `condition` |
 
-القاموس بمتغيّر حلقة **مفرد** (أُسقطت الصيغة الثنائيّة `م، ق` القديمة — كانت في دالّة
-ميتة بلا مستهلك).
+الحقل `valueVariable` (افتراضيّ فارغ) أُضيف لدعم **فكّ الزوج** على الخرائط
+(`لكل مفتاح، قيمة في خريطة`) — انظر قسم **«فكّ الزوج والتكرار على الخرائط»** أدناه.
+يبقى فارغًا في الصيغة المفردة، فلا يتأثّر أيّ مستهلك قائم.
 
 ---
 
@@ -157,6 +158,87 @@ flowchart TD
 
 ---
 
+## فكّ الزوج والتكرار على الخرائط (RFC 25 التعارض 1أ)
+
+توسعة تجعل **مصدر الاستيعاب خريطةً** لا مصفوفةً، وتضيف صيغة فكّ الزوج
+`[لكل مفتاح، قيمة في خريطة أنتج ناتج]`. تمرّ عبر الطبقات الخمس، وتبني على إصلاحٍ
+تأسيسيّ لتكرار الخرائط في المترجم.
+
+### أ) الأساس: تكرار الخريطة في حلقة `لكل` بالمترجم
+
+قبل هذه التوسعة كان المترجم يعامل الخريطة في حلقة `لكل` **كأنّها مصفوفة**: يطبّق
+`ARRAY_GET` على بنية الخريطة `{count, cap, keys*, values*, types*}` مباشرةً ⇒ قمامة
+(مؤشّرات خام تُطبع أعدادًا)، بينما المفسّر صحيح. الإصلاح في
+[`statement_for_range.cpp`](https://github.com/sadlang/s-programming-language/blob/dev/compiler/src/frontend/builders/statement_for_range.cpp):
+عند `iterableResult.type == SadTypeKind::Map` نستبدل المصدر بمصفوفة مفاتيح الخريطة
+عبر `__sad_map_keys` (تُرجع `SadArray {len, cap, data}` عبر `getOrCreateMapCollect`
+في [`map_ops.cpp`](https://github.com/sadlang/s-programming-language/blob/dev/compiler/src/backend/llvm/builders/collections/map_ops.cpp))،
+ونجلب القيم عبر `__sad_map_values` لمتغيّر القيمة إن وُجد. اسما الدالّتين ثابتان
+موحَّدان في [`sir_constants.h`](https://github.com/sadlang/s-programming-language/blob/dev/compiler/include/frontend/sir_constants.h)
+(`kRuntimeMapKeys`/`kRuntimeMapValues`) يتقاسمهما مسار الحلقة وبانِي الاستيعاب.
+
+### ب) الطبقات الخمس
+
+| الطبقة | التغيير |
+|---|---|
+| **AST** | حقل `valueVariable` (افتراضيّ فارغ) في العقد الثلاث |
+| **المحلّل** | بعد المتغيّر الأوّل، `matchComma()` اختياريّ ⇒ متغيّر قيمة ثانٍ (نفس نمط حلقة `لكل` في `parseForStmt`) في `parseArrayLiteral` و`parseMapLiteral` |
+| **المفسّر** | الزائرات الثلاث تقبل `isMap()`؛ تمرّ على `toMapRef()` وتربط `variable`=المفتاح و`valueVariable`=القيمة |
+| **المترجم** | مساعِد مشترك `lowerMapComprehensionIterable` يستدعيه البانون الثلاثة |
+| **SoT** | القواعد الثلاث في [`60_advanced.yaml`](https://github.com/sadlang/s-programming-language/blob/dev/language-truth/grammar/60_advanced.yaml) تضيف `[ '،' Identifier ]` (نفس نمط حلقة `لكل`، قاعدة `gr.stmt.for`) |
+
+### ج) المساعِد المشترك في المترجم
+
+بدل تكرار منطق الخريطة في البانين الثلاثة، يجمعه
+`ExpressionBuilder::lowerMapComprehensionIterable`
+([`expression_comprehensions.cpp`](https://github.com/sadlang/s-programming-language/blob/dev/compiler/src/frontend/builders/expression_comprehensions.cpp)):
+إن كان المصدر خريطةً استبدله بمصفوفة مفاتيحها ويُصدِر مصفوفة قيمها، ويحسم نوعَي
+المفتاح والقيمة. ثمّ يربط كلّ بانٍ متغيّر القيمة بتسجيل SSA (`registerName = valElemReg`)
+مُهيمَن عليه من كتلة الجسم.
+
+**تصنيف النوع دقيق** (يطابق تمثيل التخزين الفعليّ في `buildExprMap`):
+
+- **المفتاح دائمًا `String`**: الخريطة تُخزّن المفاتيح بـ`strdup` وتحوّل المفاتيح
+  العدديّة إلى نصّ (ISSUE-044).
+- **القيمة** تُشتقّ من `elementType` الذي يعقّبه بانِي الخريطة الحرفيّة (يُلتقَط **قبل**
+  دهسه): `Integer`/`Boolean` ⇒ نفسها؛ `String`/`Float` ⇒ `String` (العشريّ يُخزَّن
+  نصًّا داخليًّا)؛ مختلط (`Void`) ⇒ `Integer`.
+
+```mermaid
+flowchart TD
+  ITER["buildExpression(المصدر)<br/>iterResult"] --> Q{"iterResult.type == Map؟"}
+  Q -.->|"لا (مصفوفة)"| ARR["نوع العنصر = iterResult.elementType<br/>لا مصفوفة قيم"]
+  Q -->|"نعم"| CAP["التقاط mapValueType = elementType<br/>(قبل الدهس)"]
+  CAP --> KEYS["CALL __sad_map_keys ⇒ keysReg"]
+  KEYS --> VQ{"valueVar غير فارغ؟"}
+  VQ -.->|"لا"| DONE["استبدال المصدر بمصفوفة المفاتيح<br/>elementType := String"]
+  VQ -->|"نعم"| VALS["CALL __sad_map_values ⇒ valuesReg<br/>حسم valueVarType"]
+  VALS --> DONE
+  DONE --> BODY["في الجسم: ARRAY_GET المفتاح + (القيمة إن وُجدت)<br/>تسجيل SSA لكلٍّ"]
+```
+
+### د) إغلاق قيد الإخراج النصّيّ
+
+المفاتيح نصّيّة، فطبعها كان يكشف قيدًا **كونيًّا** (يمسّ حتّى `اطبع(["أ","ب"])`): نتيجة
+الاستيعاب كانت `elementType = Void` فالوصول المفهرَس يطبع مؤشّرًا؛ ومساعِد الطبع
+`__sad_array_to_string` غير موسوم فيطبع كلّ عنصر بـ`%lld`. الإصلاح شقّان:
+
+1. **تمرير نوع العنصر**: البانون يمرّرون `elemExprResult.type` إلى `elementType`
+   لنتيجة القائمة/المجموعة ⇒ الوصول المفهرَس النصّيّ يعمل (كالمصفوفة الحرفيّة).
+2. **طبع كامل موسوم**: أُضيف `elementType` إلى `SIROperand`، يمرّره بانِي الطبع
+   ([`builtins_core.cpp`](https://github.com/sadlang/s-programming-language/blob/dev/compiler/src/frontend/builders/builtins_core.cpp))؛
+   وفي الخلفيّة
+   ([`io_builtins_ops.cpp`](https://github.com/sadlang/s-programming-language/blob/dev/compiler/src/backend/llvm/builders/builtins/io_builtins_ops.cpp))
+   يوزَّع على مساعِد نصّيّ `__sad_array_to_string_str` (تمريرتان: `strlen` للحجم ثمّ
+   `sprintf("%s")`، يخصّص مخزنه) عند `elementType == String`. غير النصّيّة تبقى على
+   المسار العدديّ الأصليّ — توافق تامّ.
+
+> **ترتيب المدخلات غير محدَّد.** المفسّر يستعمل `std::unordered_map` والمترجم ترتيب
+> الخانات؛ فترتيب المرور غير مضمون (كحلقة `لكل` على الخرائط). اختبارات التكافؤ تستعمل
+> خرائط بمفتاح واحد أو تجميعًا لا-ترتيبيًّا لتفادي هشاشة المقارنة الحرفيّة.
+
+---
+
 ## 4) الاختبار (طبقتان)
 
 - **سلوك (تكافؤ مزدوج)** — `tests/behavior/rules_matrix/60_advanced/gr.adv.{list,set,
@@ -168,6 +250,12 @@ flowchart TD
   (إطار `sad_test.h`): يتحقّق من عقد AST + تمييز قاموس/مجموعة + رفض الترتيب القديم +
   بنية `BinaryExpr` للناتج. مُسجَّل في CTest كـ`ComprehensionAntajTests` (وسم `Unit`)
   عبر [`cmake/tests.cmake`](https://github.com/sadlang/s-programming-language/blob/dev/cmake/tests.cmake).
+
+> **تغطية فكّ الزوج:** يضيف ملفّ الوحدة قسم `PairUnpack` (يتحقّق أنّ `valueVariable`
+> يُملأ بالفاصلة ويبقى فارغًا بدونها، والحالة السلبيّة «فاصلة بلا اسم»)؛ وتضيف مجلّدات
+> السلوك حالات فكّ زوج بإخراج **صحيح** أو **فهرسة** (لتفادي عدم تحديد الترتيب) — قائمة
+> ومجموعة وقاموس. القِيَم النصّيّة تُختبَر عبر الفهرسة والطبع الكامل بعد إصلاح الإخراج
+> النصّيّ (القسم د أعلاه).
 
 ---
 
