@@ -31,6 +31,14 @@ chapters:
     sources:
       - shared/ast/include/ast_visitor.h
 
+  - file: src/frontend/comprehensions.md
+    sources:
+      - shared/parser/src/statements/parser_advanced.cpp   # parseArrayLiteral / parseMapLiteral
+      - shared/ast/include/expressions.h                   # List/Set/DictComprehensionExpr
+      - compiler/src/frontend/builders/expression_comprehensions.cpp  # بانِي القائمة/القاموس
+      - compiler/src/frontend/builders/expression_comp2.cpp           # بانِي المجموعة (مسح إزالة التكرار)
+      - language-truth/grammar
+
   - file: src/backend/interpreter.md
     sources:
       - interpreter/include/core/interpreter_core.h
