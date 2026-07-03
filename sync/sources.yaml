@@ -31,6 +31,20 @@ chapters:
     sources:
       - shared/ast/include/ast_visitor.h
 
+  - file: src/frontend/comprehensions.md
+    sources:
+      - shared/parser/src/statements/parser_advanced.cpp   # parseArrayLiteral / parseMapLiteral (+ matchComma فكّ الزوج)
+      - shared/ast/include/expressions.h                   # List/Set/DictComprehensionExpr (+ valueVariable)
+      - interpreter/src/visitors/expression_evaluator_members_advanced.cpp  # زائرات الاستيعاب + فرع الخريطة
+      - compiler/src/frontend/builders/expression_comprehensions.cpp  # بانِي القائمة/القاموس + lowerMapComprehensionIterable
+      - compiler/src/frontend/builders/expression_comp2.cpp           # بانِي المجموعة (مسح إزالة التكرار)
+      - compiler/src/frontend/builders/statement_for_range.cpp        # أساس تكرار الخريطة في المترجم
+      - compiler/include/frontend/sir_constants.h                     # kRuntimeMapKeys/kRuntimeMapValues (عقد الأسماء المشترك)
+      - compiler/src/backend/llvm/builders/collections/map_ops.cpp    # __sad_map_keys/values + getOrCreateMapCollect
+      - compiler/src/frontend/builders/builtins_core.cpp              # تمرير elementType لمُعامل الطبع
+      - compiler/src/backend/llvm/builders/builtins/io_builtins_ops.cpp  # طبع المصفوفة الموسوم (__sad_array_to_string_str)
+      - language-truth/grammar
+
   - file: src/backend/interpreter.md
     sources:
       - interpreter/include/core/interpreter_core.h

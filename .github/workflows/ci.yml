@@ -37,7 +37,11 @@ jobs:
       - name: فحص الروابط الداخليّة (lychee على الإخراج المبنيّ)
         uses: lycheeverse/lychee-action@v2
         with:
-          args: --offline --no-progress "book/**/*.html"
+          # (AR) --root-dir يحلّ روابط الجذر «/» المحلّيّة (يولّدها قالب 404.html في mdBook)
+          #      إلى جذر الكتاب المبنيّ، وإلّا فشل lychee دون اتّصال («Cannot convert path '/'»).
+          # (EN) --root-dir resolves local root links "/" (emitted by mdBook's 404.html) to the
+          #      built book root; otherwise offline lychee errors with "Cannot convert path '/'".
+          args: --offline --no-progress --root-dir "${{ github.workspace }}/book" "book/**/*.html"
           fail: true
 
   # حُرّاس نظام المزامنة: سلامة البيان + منع «الكتم الصامت» للقفل

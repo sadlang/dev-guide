@@ -29,6 +29,7 @@
 - [المحلل المعجمي (Lexer)](frontend/lexer.md)
 - [المحلل النحوي (Parser)](frontend/parser.md)
 - [شجرة AST](frontend/ast.md)
+- [دراسة حالة: الاستيعابات (أنتج → SIR)](frontend/comprehensions.md)
 
 # الجزء الخامس · الواجهة الخلفيّة (Backend)
 
