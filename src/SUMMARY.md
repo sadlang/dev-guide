@@ -37,6 +37,7 @@
 - [التمثيل الوسيط SIR](backend/sir.md)
 - [توليد LLVM (المترجم sadc)](backend/llvm.md)
 - [الآلة الافتراضية (VM)](backend/vm.md)
+- [دراسة حالة: توحيد هاش/شفّر/فك_تشفير](backend/crypto-unification.md)
 
 # الجزء السادس · أنظمة اللغة
 
