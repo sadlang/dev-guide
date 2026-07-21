@@ -91,6 +91,20 @@ chapters:
       - language-truth/builtins
       - interpreter/src/builtins
 
+  - file: src/systems/sadui-layout.md
+    sources:
+      - features/graphics/core/src/layout.cpp
+      - features/graphics/core/include/sad_ui/prop_keys.h
+      - language-truth/ui_props.yaml
+      - scripts/codegen/gen_ui_props.py
+
+  - file: src/backend/crypto-unification.md
+    sources:
+      - compiler/src/frontend/builders/builtins_security.cpp
+      - compiler/src/backend/llvm/builders/builtins/security_builtins_ops.cpp
+      - interpreter/src/builtins/builtin_module_assertions.cpp
+      - language-truth/builtins/assertions.yaml
+
   - file: src/sot/philosophy.md
     sources:
       - language-truth/_schemas
