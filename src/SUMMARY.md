@@ -38,6 +38,7 @@
 - [توليد LLVM (المترجم sadc)](backend/llvm.md)
 - [الآلة الافتراضية (VM)](backend/vm.md)
 - [دراسة حالة: توحيد هاش/شفّر/فك_تشفير](backend/crypto-unification.md)
+- [دراسة حالة: توسيع مكتبة التشفير (٥ مراحل + Argon2id)](backend/crypto-library-expansion.md)
 
 # الجزء السادس · أنظمة اللغة
 

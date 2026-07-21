@@ -105,6 +105,13 @@ chapters:
       - interpreter/src/builtins/builtin_module_assertions.cpp
       - language-truth/builtins/assertions.yaml
 
+  - file: src/backend/crypto-library-expansion.md
+    sources:
+      - interpreter/src/builtins/builtin_module_crypto.cpp
+      - tools/compiler/runtime/sad_embedded_runtime.c
+      - tools/compiler/compiler_driver_android_linker.cpp
+      - language-truth/builtins/crypto.yaml
+
   - file: src/sot/philosophy.md
     sources:
       - language-truth/_schemas
