@@ -45,6 +45,7 @@
 - [نظام الأنواع وفاحص الأنواع](systems/types.md)
 - [نظام الأخطاء والتشخيص](systems/errors.md)
 - [الدوال المضمنة والوحدات](systems/builtins.md)
+- [محرّك تخطيط SadUI والمحاذاة المتقاطعة RTL](systems/sadui-layout.md)
 
 # الجزء السابع · المساهمة والحوكمة
 
