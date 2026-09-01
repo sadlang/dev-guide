@@ -57,8 +57,20 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set +e
+          set +e
           python scripts/check_sync.py --ref "${{ steps.ref.outputs.ref }}" --json > report.json
-          echo "drift=$?" >> "$GITHUB_OUTPUT"
+          RC=$?
+          set -e
+          # (AR) 0 و1 وحدهما قياسان (لا انجراف / انجراف). أيُّ رمزٍ سواهما — و`2`
+          #      يُرجَع عند غياب القفل قبل طباعةِ أيّ JSON — كان يجعل الشرطين
+          #      كاذبَين معًا: لا قضيّةَ تُفتح، ولا خطوةَ «لا انجراف»، والوظيفةُ
+          #      خضراء وهي لم تقس شيئًا.
+          if [ "$RC" != "0" ] && [ "$RC" != "1" ]; then
+            echo "::error::رمزُ خروجٍ غيرُ مقيس ($RC) — لم يُقَس الانجراف."
+            cat report.json || true
+            exit "$RC"
+          fi
+          echo "drift=$RC" >> "$GITHUB_OUTPUT"
           cat report.json
 
       - name: صياغة جسم القضيّة

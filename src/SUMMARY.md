@@ -8,8 +8,8 @@
 # الجزء الأول · البدء
 
 - [إعداد البيئة والبناء](getting-started/setup.md)
-- [أوّل مساهمة (Walkthrough)](getting-started/first-contribution.md)
 - [خريطة المستودع](getting-started/repo-map.md)
+- [أوّل مساهمة (Walkthrough)](getting-started/first-contribution.md)
 
 # الجزء الثاني · المعمارية
 

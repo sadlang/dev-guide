@@ -65,9 +65,27 @@ jobs:
       - name: (د) حارس سلامة البيان (بلا شبكة)
         run: python scripts/check_sync.py --validate
 
+      # (AR) على `workflow_dispatch` يكون `base_ref` فارغًا ⇒ `origin/` ⇒ يفشل
+      #      `git show` ⇒ قفلُ أساسٍ فارغ ⇒ يتخطّى الحارسُ نفسَه **صامتًا** ويُقرأ
+      #      أخضرَ. الأخضرُ حينها يعني «لم يُقَس» لا «مرّ»؛ فنقصره على الـPR صراحةً.
       - name: (أ) حارس القفل — لا تثبيت بصمةٍ دون مراجعة فصلها
+        if: github.event_name == 'pull_request'
         run: |
           BASE="origin/${{ github.base_ref }}"
-          git show "$BASE:sync/sources.lock.json" > base.lock.json 2>/dev/null || : > base.lock.json
+          # (AR) فرّق بين «لا قفلَ في الأساس» (تخطٍّ مشروع) و«تعذّر بلوغُ الأساس»
+          #      (حمرة). كان `|| :` يبتلع الحالتين معًا، فأيُّ فشلٍ لـ`git show` —
+          #      مرجعٌ غيرُ مجلوب، نقلُ مسارِ القفل — يُنتج أساسًا فارغًا فيتخطّى
+          #      الحارسُ نفسَه ويُرجع صفرًا: فاشلٌ مفتوحًا.
+          git rev-parse --verify "$BASE" >/dev/null 2>&1 \
+            || { echo "::error::مرجعُ الأساس $BASE غيرُ مجلوب — الحارسُ لم يُقَس."; exit 1; }
+          if git cat-file -e "$BASE:sync/sources.lock.json" 2>/dev/null; then
+            git show "$BASE:sync/sources.lock.json" > base.lock.json
+          else
+            : > base.lock.json   # لا قفلَ في الأساس فعلًا — تخطٍّ مشروع
+          fi
+          # (AR) بيانُ الأساس يلزم لقياس المفاتيح **المُسقَطة**: المفتاحُ المحذوف
+          #      لا أثرَ له في البيان الحاليّ، فلا يُعرَف أيُّ فصلٍ كان يستشهد به.
+          git show "$BASE:sync/sources.yaml" > base.sources.yaml 2>/dev/null || : > base.sources.yaml
           git diff --name-only "$BASE"...HEAD > changed.txt
-          python scripts/check_sync.py --guard-lock --base base.lock.json --changed-files changed.txt
+          python scripts/check_sync.py --guard-lock --base base.lock.json \
+                 --base-manifest base.sources.yaml --changed-files changed.txt

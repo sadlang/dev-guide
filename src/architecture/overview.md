@@ -11,8 +11,9 @@
 | المترجم | `compiler/` | AST → SIR → LLVM IR → ملفّ تنفيذيّ (SIR يدعم تعليمات ملكية) |
 | الخلفيّة الأصليّة | `compiler/include/backend/native/` | SIR → شيفرة آلة → ELF64 ساكن بلا LLVM ولا رابطٍ أجنبيّ — [الفصل](../backend/native.md) |
 | ~~الآلة الافتراضية~~ | — | `vm/` أُزيل من الشجرة بالإيداع `bcf0a746` («ستُعاد كتابتها من الصفر») — لا فصل له حتّى تُكتب |
-| المكتبة القياسية | `stdlib/` | وحدات عربية: core/io/math/string/network/graphics |
-| الأدوات | `tools/` | ١٥ مجلّدًا على `dev`: analyze · apk_builder · build · check · compiler (واجهة `sad-build`) · formatter · hub (موزِّع `sad`) · installers · lsp · pkg · profiler · repl · security-scanner · shared · wasm |
+| المكتبة القياسية | `stdlib/` | ثماني وحدات `.ص` عربيّة في الجذر + سبعةَ عشرَ مجلّدَ دعمٍ C++ — التعدادُ في [خريطة المستودع](../getting-started/repo-map.md) |
+| الرسومات | `features/graphics/` | SadUI: محرّك التخطيط ومفاتيح الخصائص — **ليست في `stdlib/`** — [الفصل](../systems/sadui-layout.md) |
+| الأدوات | `tools/` | ١٥ مجلّدًا على `dev`؛ منها `compiler` (واجهة `sad-build`) و`hub` (موزِّع `sad`) — التعدادُ في [خريطة المستودع](../getting-started/repo-map.md) |
 | مصدر الحقيقة | `language-truth/` | YAML SoT لكل بيانات اللغة + القواعد |
 
 ## القاعدة الطبقيّة (CW-02)

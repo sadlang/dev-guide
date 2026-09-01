@@ -19,7 +19,7 @@ cd /c/s_lang/temp-brunch/builtin-جذر
 ## 3) ابدأ من مصدر الحقيقة (لا من الكود المُولَّد)
 أضف الدالة إلى `language-truth/builtins/<domain>.yaml`، ثم أعد التوليد:
 ```bash
-python scripts/codegen/gen_all_builtins_yaml.py   # أو المولّد المعنيّ
+python x.py gen   # أو مولِّدٌ بعينه: scripts/codegen/gen_all_builtins_yaml.py
 ```
 
 ## 4) نفّذ في الطبقة الصحيحة
@@ -27,13 +27,14 @@ python scripts/codegen/gen_all_builtins_yaml.py   # أو المولّد المع
 - المترجم: `compiler/src/backend/llvm/builders/builtins/*.cpp`.
 
 ## 5) اكتب اختبار `.ص` (إيجابيّ + سلبيّ)
-ملف تحت `tests/` بصيغة `@expected` الصحيحة.
+ملف `.ص` تحت **`tests/behavior/`** (لا تحت `tests/` مباشرةً) بصيغة `@expected`
+الصحيحة — و`tests_dir: tests/behavior` في `tests/config.yaml` هو ما يجعل الـrunner
+يراه. راجع [خريطة المستودع](repo-map.md) للحِزَم الستّ وأيُّها يناسب اختبارَك.
 
 ## 6) ابنِ وشغّل (تنفيذ مزدوج)
 ```bash
-cmake --build build --config Debug --target sad-run
-cmake --build build --config Release --target sad-build
-python runner.py --level P1        # يجب أن يمرّ 100% بلا تراجع
+python x.py build                  # المحرّكان معًا في تهيئة واحدة
+python tests/runner.py --level P1  # يجب أن يمرّ 100% بلا تراجع
 ```
 
 ## 7) أودِع (موقّع GPG) وافتح PR
@@ -54,4 +55,4 @@ git branch -D agent/builtin-جذر
 > ✅ راجع [معيار الإنجاز](../contributing/definition-of-done.md) قبل إعلان الانتهاء.
 
 ---
-**اقرأ بعده:** [خريطة المستودع](repo-map.md).
+**اقرأ بعده:** [نظرة عامّة على الطبقات](../architecture/overview.md).
