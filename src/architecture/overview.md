@@ -12,7 +12,7 @@
 | الخلفيّة الأصليّة | `compiler/include/backend/native/` | SIR → شيفرة آلة → ELF64 ساكن بلا LLVM ولا رابطٍ أجنبيّ — [الفصل](../backend/native.md) |
 | ~~الآلة الافتراضية~~ | — | `vm/` أُزيل من الشجرة بالإيداع `bcf0a746` («ستُعاد كتابتها من الصفر») — لا فصل له حتّى تُكتب |
 | المكتبة القياسية | `stdlib/` | وحدات عربية: core/io/math/string/network/graphics |
-| الأدوات | `tools/` | lsp · formatter · pkg · repl · sadc CLI · sadinfo |
+| الأدوات | `tools/` | ١٥ مجلّدًا على `dev`: analyze · apk_builder · build · check · compiler (واجهة `sad-build`) · formatter · hub (موزِّع `sad`) · installers · lsp · pkg · profiler · repl · security-scanner · shared · wasm |
 | مصدر الحقيقة | `language-truth/` | YAML SoT لكل بيانات اللغة + القواعد |
 
 ## القاعدة الطبقيّة (CW-02)

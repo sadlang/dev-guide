@@ -31,8 +31,8 @@ python scripts/codegen/gen_all_builtins_yaml.py   # أو المولّد المع
 
 ## 6) ابنِ وشغّل (تنفيذ مزدوج)
 ```bash
-cmake --build build --config Debug --target sad
-cmake --build build --config Release --target sadc
+cmake --build build --config Debug --target sad-run
+cmake --build build --config Release --target sad-build
 python runner.py --level P1        # يجب أن يمرّ 100% بلا تراجع
 ```
 

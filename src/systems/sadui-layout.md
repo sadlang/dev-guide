@@ -43,9 +43,11 @@
 ## مصدر حقيقة مفاتيح الخصائص (SoT)
 
 كلّ مفتاح خاصّيّة (نحو «محاذاة»/«حشو»/«عرض») معرَّف في
-`language-truth/ui_props.yaml` (٨٢ مفتاحًا)، يُولَّد منه
-`sad_ui/prop_keys.h` (ثوابت `sad::ui::props::<ID>`) عبر `x.py gen`. **لا سلسلة
-مفتاح خام في كود الرسوميّات** — يُقرأ المفتاح دائمًا عبر الثابت المولَّد:
+[`language-truth/ui_props.yaml`](https://github.com/sadlang/s-programming-language/blob/dev/language-truth/ui_props.yaml)
+— **١٠٤ مفاتيحَ على `dev`** — يُولَّد منه `sad_ui/prop_keys.h` (ثوابت
+`sad::ui::props::<ID>`، وعددُها ١٠٤ أيضًا: تكافؤٌ عدديٌّ بين المصدر والمولَّد) عبر
+`x.py gen`. **لا سلسلة مفتاح خام في كود الرسوميّات** — يُقرأ المفتاح دائمًا عبر
+الثابت المولَّد:
 
 ```cpp
 node.findProperty(props::ALIGN)   // ✓  لا  findProperty("محاذاة")
@@ -53,6 +55,11 @@ node.findProperty(props::ALIGN)   // ✓  لا  findProperty("محاذاة")
 
 يحرسه `check_no_raw_props.py` + `check_ui_props_consistency.py` ضمن
 `x.py gen --check` (محلّيًّا + CI)، وworkflow `props-literals-lint.yml`.
+
+> ⚠️ **`latin_alias` ليس اسمًا قانونيًّا.** بعضُ المفاتيح يحمل حقلًا اختياريًّا
+> `latin_alias` — نصُّ المصدر يحدّه: «بديلٌ احتياطيٌّ لاتينيّ يقرؤه المُرسِّم فقط، لا
+> قانونيّ». فلا يُكتَب في `IRNode` ولا يُوثَّق للمستخدم؛ القانونيُّ هو `canonical`
+> العربيُّ وحده.
 
 > التفصيل المعماريّ الكامل (مع الأمثلة والرسوم) في مستودع اللغة:
 > `docs/architecture/sadui-layout-alignment.md`.

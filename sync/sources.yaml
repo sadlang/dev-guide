@@ -7,7 +7,7 @@ repo: sadlang/s-programming-language
 ref: dev
 
 # نسخة اللغة التي يغطّيها الدليل (تُرفَع آليًّا عند مراجعة إصدار: --update --set-version)
-covers_version: "1.0.0"
+covers_version: "dev@1138f5e1"
 
 # صيغة المصدر: إمّا مسار نصّيّ (يُرصد أيّ تغيّر في الملف/المجلد كاملًا)،
 # أو كائن {path, lines: "بداية-نهاية"} لبصم نطاقٍ بعينه فقط — يقلّل الإنذارات
@@ -27,8 +27,14 @@ chapters:
       - shared/parser/include/parser_core.h
       - language-truth/operators.yaml
 
+  - file: src/architecture/pipeline.md
+    sources:
+      - compiler/include/frontend/sir_types.h              # SIR: المرحلة 4ب
+      - language-truth/cli_flags.yaml                      # --أظهر-llvm (نقاط التشخيص)
+
   - file: src/frontend/ast.md
     sources:
+      - compiler/include/frontend/sir_builder.h            # SIRBuilder : SIRBuilderContext (ليس زائرًا) + buildModule
       - shared/ast/include/ast_visitor.h
 
   - file: src/frontend/comprehensions.md
@@ -47,6 +53,10 @@ chapters:
 
   - file: src/backend/interpreter.md
     sources:
+      - interpreter/src/core/interpreter_core.cpp          # execute(): الطور الساكن (قاعدة الرئيسية · فحص الأنواع · أمان العدم)
+      - shared/types/include/class_manager.h               # المُفرَد العابر للمحرّكين (خارج مدراء المفسّر)
+      - shared/types/src/class_manager.cpp                 # القفل على getInstance/resetInstance وحدهما
+      - interpreter/include/channel.h                      # GoroutineManager + SadChannel
       - interpreter/include/core/interpreter_core.h
       - interpreter/include/visitors/expression_evaluator.h
       - shared/ast/include/ast_visitor.h
@@ -57,6 +67,8 @@ chapters:
 
   - file: src/backend/llvm.md
     sources:
+      - language-truth/cli_flags.yaml                      # --أظهر-llvm / --أظهر-bc: اسم عربيّ وحيد بلا مرادفات
+      - tools/compiler/compiler_driver_backend_llvm_absent.cpp  # هدف sad-build-native: رفض صريح INT_LLVM_PATH_ABSENT
       - compiler/src/backend/llvm
 
   - file: src/backend/native.md
@@ -105,6 +117,7 @@ chapters:
 
   - file: src/backend/crypto-unification.md
     sources:
+      - { path: shared/lexer/src/lexer_core.cpp, lines: "100-1770" }  # تخطّي التشكيل U+064B–U+065F ⇒ «شفّر» تعمل و«شفر» هو القانونيّ
       - compiler/src/frontend/builders/builtins_security.cpp
       - compiler/src/backend/llvm/builders/builtins/security_builtins_ops.cpp
       - interpreter/src/builtins/builtin_module_assertions.cpp
@@ -133,6 +146,7 @@ chapters:
 
   - file: src/sot/grammar-sot.md
     sources:
+      - scripts/codegen/gen_grammar_lowers_to.py           # مولِّد lowers_to.yaml (اشتقاق تجريبيّ بـ--أظهر-sir)
       - language-truth/grammar
       - scripts/codegen/gen_parser_grammar_docs.py
 
