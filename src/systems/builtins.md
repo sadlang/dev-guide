@@ -40,5 +40,5 @@ shared/builtins/generated/builtin_registry_generated.h   ← مُولَّد
 > التفاصيل في مهارة `sad-lang-dev` (`references/builtins-system.md`).
 
 ---
-**اقرأ بعده:** [دراسة حالة: توحيد هاش/شفّر/فك_تشفير](../backend/crypto-unification.md) ·
+**اقرأ بعده:** [دراسة حالة: توحيد هاش/شفر/فك_تشفير](../backend/crypto-unification.md) ·
 [سير عمل الفروع](../contributing/workflow.md).

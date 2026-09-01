@@ -16,7 +16,7 @@ flowchart LR
   Y["language-truth/*.yaml<br/>(المصدر الوحيد)"] --> GEN["scripts/codegen/gen_*.py<br/>(المولّد)"]
   GEN --> CPP["shared/*/generated/*.{h,cpp}<br/>(مُولَّد — لا يُحرَّر)"]
   GEN --> DOC["توثيق + مخطّطات مُولَّدة"]
-  Y --> TOOLS["LSP · formatter · sadinfo · pkg"]
+  Y --> TOOLS["LSP · formatter · pkg · analyze"]
   CPP --> BUILD["بناء C++"]
 ```
 

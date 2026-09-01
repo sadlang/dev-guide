@@ -2,7 +2,8 @@
 
 > **ماذا ستتعلّم:** كيف يزور `Interpreter` شجرة AST ويقيّمها فورًا (tree‑walking) —
 > نمط الزائر بحامل النتيجة، تنسيق المدراء (نطاقات · متغيّرات · دوال · كائنات · ملكيّة)،
-> دورة التقييم من البرنامج إلى القيمة، ونموذج التزامن (goroutines).
+> **الطور الساكن الذي يسبق أوّل جملة**، دورة التقييم من البرنامج إلى القيمة، ونموذج
+> التزامن (goroutines) وحدودُ عزله.
 
 > 📎 المصدر: [`interpreter/include/core/interpreter_core.h`](https://github.com/sadlang/s-programming-language/blob/dev/interpreter/include/core/interpreter_core.h) · [`visitors/expression_evaluator.h`](https://github.com/sadlang/s-programming-language/blob/dev/interpreter/include/visitors/expression_evaluator.h) · [`shared/ast/include/ast_visitor.h`](https://github.com/sadlang/s-programming-language/blob/dev/shared/ast/include/ast_visitor.h)
 
@@ -31,25 +32,33 @@ flowchart TB
   INT["Interpreter<br/>execute · executeStatement · evaluateExpression"]
   INT --> SE["StatementExecutor<br/>(تنفيذ الجمل)"]
   INT --> EE["ExpressionEvaluator<br/>(تقييم التعابير)"]
-  subgraph MGR["المدراء (Data::*)"]
+  subgraph MGR["مدراء المفسّر (interpreter/include/managers/)"]
     SM["ScopeManager — النطاقات"]
     VM["VariableManager — المتغيّرات"]
     FM["FunctionManager — الدوال"]
-    CM["ClassManager — الأصناف"]
     OM["ObjectManager — الكائنات"]
     OW["OwnershipManager — الملكيّة"]
   end
   SE --> MGR
   EE --> MGR
+  SE -.->|"getInstance()"| CM["ClassManager<br/>(مُفرَدٌ في shared/types — خارج المفسّر)"]
 ```
 
-| المدير | يدير |
-|--------|------|
-| `ScopeManager` | سلسلة النطاقات (دخول/خروج، البحث الهرميّ) |
-| `VariableManager` | ربط الأسماء بالقيم داخل النطاق |
-| `FunctionManager` | تعريفات الدوال (مشترَكٌ **للقراءة فقط** بين الخيوط) |
-| `ClassManager` / `ObjectManager` | الأصناف ومثيلاتها (OOP) |
-| `OwnershipManager` | تتبّع الملكيّة/الاستعارة — يربط [نظام الذاكرة](../systems/memory.md) |
+| المدير | يدير | أين |
+|--------|------|-----|
+| `ScopeManager` | سلسلة النطاقات (دخول/خروج، البحث الهرميّ) | `managers/scope_manager.h` |
+| `VariableManager` | ربط الأسماء بالقيم داخل النطاق | `managers/variable_manager.h` |
+| `FunctionManager` | تعريفات الدوال (مشترَكٌ **للقراءة فقط** بين الخيوط) | `managers/function_manager.h` |
+| `ObjectManager` | مثيلات الكائنات (OOP) | `managers/object_manager.h` |
+| `OwnershipManager` | تتبّع الملكيّة/الاستعارة — يربط [نظام الذاكرة](../systems/memory.md) | `managers/ownership_manager.h` |
+| `GoroutineManager` | دورة حياة الخيوط المتزامنة | `interpreter/include/channel.h` |
+| `UIStateManager` | حالة عناصر الواجهة أثناء التفسير | `interpreter/include/ui/ui_state_manager.h` |
+
+> ⚠️ **`ClassManager` ليس من مدراء المفسّر.** هو **مُفرَدٌ (singleton)** يعيش في
+> [`shared/types/include/class_manager.h`](https://github.com/sadlang/s-programming-language/blob/dev/shared/types/include/class_manager.h#L128)
+> ويُنادى بـ`ClassManager::getInstance()` من المحلّل والمفسّر والمترجم جميعًا —
+> فسجلُّ الأصناف **عابرٌ للمحرّكين وعمليّةٌ واحدة**، لا حالةٌ مملوكةٌ لمثيل `Interpreter`.
+> راجع أثرَ ذلك على التزامن في §⑤.
 
 ## ② نمط الزائر بحامل النتيجة
 
@@ -73,16 +82,58 @@ sequenceDiagram
 > 💡 **الإرسال المزدوج (double dispatch):** العقدة تعرف نوعها، فتستدعي `visitBinaryExpr`
 > الصحيحة دون `switch` على نوعٍ مُعدَّد — إضافة عقدةٍ جديدة = دالة `visit` جديدة في الزائر.
 
-الزائر مقسَّمٌ على ملفّات حسب العائلة (تخفيفًا للترجمة): `expression_evaluator_binary_ops`،
-`..._calls_*`، `..._members_*`، `..._oop_*`، `..._overloads`، `..._ui`. ومثلها للجمل:
-`statement_executor`، `..._control`، `..._control_exceptions`، `..._functions*`،
-`..._modules`، `..._oop*`.
+الزائران مقسَّمان على **٣٠ ملفًّا** في `interpreter/src/visitors/` (تخفيفًا لزمن الترجمة):
+`expression_evaluator_core` · `..._binary_ops`/`..._binary_logic` ·
+`..._calls`/`..._calls_dispatch`/`..._calls_invoke`/`..._calls_user_func`/`..._calls_macro` ·
+`..._members`/`..._members_advanced`/`..._members_assign` ·
+`..._oop`/`..._oop_new`/`..._oop_array_methods`/`..._oop_string_map_methods`/`..._oop_concurrency` ·
+`..._overloads` · `..._ui`. ومثلها للجمل: `statement_executor` · `..._control` ·
+`..._control_exceptions` · `..._functions`/`..._functions_templates` · `..._modules` ·
+`..._oop`/`..._oop_types`/`..._oop_struct_test`. ومعها `sem045_report`
+(تقرير SEM045 — عقد الغياب) وجسرا الواجهة `ui_eval_bridge_core` و`ui_widget_expr_dispatch`.
 
-## ③ دورة التقييم الكاملة
+## ③ الطور الساكن: `execute` لا يبدأ بالتنفيذ
+
+> 🔑 **المفسّر ليس «مشيًا على الشجرة» فقط.** قبل تنفيذ أوّل جملة يمسح
+> [`execute()`](https://github.com/sadlang/s-programming-language/blob/dev/interpreter/src/core/interpreter_core.cpp)
+> **البرنامجَ كلَّه** — **مرّتين افتراضيًّا، وثلاثًا إن فُعِّل فحصُ الأنواع** (فهو مطفأٌ
+> افتراضيًّا، انظر أدناه) — ويشمل المسحُ الدوالَّ غيرَ المُنادَاة والفروعَ الميّتة.
+> مَن ظنّه محضَ مُقيِّمٍ كسولٍ فوجئ بتشخيصٍ يخرج من كودٍ لا يُنفَّذ أبدًا.
 
 ```mermaid
 flowchart TD
-  P["execute(program: جمل)"] --> LOOP{"لكلّ جملة"}
+  S0["execute(program)"] --> S1["مسحٌ عن الدالّة «رئيسية»"]
+  S1 --> S2{"قاعدة الدالّة الرئيسيّة<br/>checkMainFunctionRule"}
+  S2 -->|"كودٌ تنفيذيٌّ خارج الدوال مع وجود رئيسية"| ERR1["SEM_MAIN_FUNCTION_RULE ⇒ توقّف"]
+  S2 --> S3{"options_.enableTypeCheck؟"}
+  S3 -->|"false (الافتراضيّ)"| S4
+  S3 -->|"true"| TC["TypeChecker على كلّ جملة ⇒ فشلٌ عند أيّ خطأ"]
+  TC --> S4["NullSafetyAnalyzer — دائمًا"]
+  S4 --> CLR["ErrorManager::clear()"]
+  CLR --> P1["الطور الأوّل: تنفيذ كلّ الجمل العلويّة<br/>(تسجيل الدوال والأصناف والعوامّ)"]
+  P1 --> P2["الطور الثاني: تنفيذ «رئيسية» إن وُجدت"]
+```
+
+| الطور | متى يعمل | إن فشل |
+|---|---|---|
+| قاعدة الدالّة الرئيسيّة | حين توجد `رئيسية` | `SEM_MAIN_FUNCTION_RULE` وتوقّفٌ قبل التنفيذ |
+| فحص الأنواع (`TypeChecker`) | **مطفأٌ افتراضيًّا**: `enableTypeCheck = false` | توقّفٌ بعدّ الأخطاء |
+| تحليل أمان العدم | **دائمًا**، وصرامتُه مشتقّةٌ من سياسة الذاكرة عبر `strictnessFromOwnershipMode` | تحذيراتٌ دائمًا؛ وتوقّفٌ عند الصرامة القاتلة |
+
+> ⚠️ **العَلَمُ الافتراضيّ يكذبُ على القارئ.**
+> [`enableTypeCheck = false`](https://github.com/sadlang/s-programming-language/blob/dev/interpreter/include/core/interpreter_core.h#L78)
+> — فالمفسّر يعمل بفاحصِ الأنواع **مُطفأً** ما لم يُطلَب صراحةً. فإن جرى برنامجٌ على
+> `sad-run` وسقط على `sad-build`، فليس بالضرورة تباعُدَ محرّكين: قد يكون طورًا ساكنًا
+> شغّله المترجمُ ولم يشغّله المفسّر.
+
+> ⚠️ الأطوارُ الساكنة كلُّها محجوبةٌ بـ`#if !defined(__EMSCRIPTEN__) && !defined(SAD_PLATFORM_ANDROID)`
+> — فبناءُ wasm أو أندرويد **لا يفحص شيئًا** قبل التنفيذ. لا تَقِس دلالةَ اللغة على أيٍّ منهما.
+
+## ④ دورة التقييم الكاملة
+
+```mermaid
+flowchart TD
+  P["الطور الأوّل/الثاني: تنفيذ الجمل"] --> LOOP{"لكلّ جملة"}
   LOOP --> ES["executeStatement → StatementExecutor"]
   ES --> KIND{"نوع الجملة"}
   KIND -->|تعبيريّة| EVAL["evaluateExpression → accept → getResult"]
@@ -101,7 +152,7 @@ flowchart TD
 `(left, TokenType op, right, Position)` وتتشاور مع [نظام الأنواع](../systems/types.md) للتحميل
 الزائد والإكراه.
 
-## ④ التزامن (Goroutines)
+## ⑤ التزامن (Goroutines)
 
 نموذج التزامن يقوم على **العزل**: كلّ goroutine يعمل بـ`StatementExecutor` مستقلّ مع
 `ScopeManager` / `VariableManager` / `OwnershipManager` خاصّةٍ به، ويُشارَك `FunctionManager`
@@ -122,13 +173,25 @@ flowchart LR
 > نطاق المنشئ. `FunctionManager` مشترَكٌ لكنّه للقراءة فقط، والقنوات (`SadChannel`) آمنةٌ
 > بـmutex داخليّ.
 
+> 🔑 **حدُّ العزل: `ClassManager` خارجه.** العزلُ أعلاه يغطّي مدراءَ المفسّر، لا المُفرَدَ
+> العابرَ للمحرّكين. وقياسُ [`class_manager.cpp`](https://github.com/sadlang/s-programming-language/blob/dev/shared/types/src/class_manager.cpp)
+> يقول: **`getInstance` و`resetInstance` وحدهما يقفلان `instanceMutex_`** — أمّا
+> `registerClass` و`getClass` و`hasClass` و`registerTrait` وسائرُ الخريطة **فبلا قفل**.
+> فالتعليقُ الذي يصف الصنفَ بأنّه «آمنٌ للخيوط المتعدّدة» يصفُ **إنشاءَ المُفرَد** لا
+> **محتواه**. عمليًّا: `أطلق` على شيفرةٍ تُصرِّح صنفًا (أو تحمِّل وحدةً تُصرِّحه) يكتبُ
+> في خريطةٍ عامّةٍ غيرِ متزامنة. هذا **عقدٌ معلَنٌ لا يقيسه أحد**، لا حكمٌ بأنّه عطبٌ
+> مرصود — قِسه قبل أن تبنيَ عليه.
+
 ## ملاحظات للمطوّر
 
 - القيم كلّها `Value` (`std::variant` على `ValueType`)؛ `OBJECT` يحمل `shared_ptr<ObjectInstance>`
   ⇒ **تمرير الكائنات بالمرجع** → [نظام الأنواع](../systems/types.md).
-- شغّل `.ص` مباشرةً بـ`sad.exe` لاختبارٍ سريع — لا حاجة لخطوة ترجمة.
+- شغّل `.ص` مباشرةً بـ`sad-run` لاختبارٍ سريع — لا حاجة لخطوة ترجمة.
 - إن طابق المفسّر وخالف المترجم ⇒ المشكلة في SIR/LLVM لا في الدلالة (BF‑08).
-- لإضافة عقدة AST جديدة: أضف `visit<Node>` إلى `BaseASTVisitor` ونفّذها في الزائرَين.
+- لإضافة عقدة AST جديدة: أضف `visit<Node>` الصرفة إلى `ASTVisitor` وتطبيقًا فارغًا في
+  `BaseASTVisitor`، ثمّ نفّذها في الزائرَين → [شجرة AST](../frontend/ast.md).
+- الأصنافُ تُسجَّل في `ClassManager::getInstance()` (مُفرَدُ `shared/types`)، لا في مديرٍ
+  يملكه المفسّر.
 
 ---
 **اقرأ بعده:** [التمثيل الوسيط SIR](sir.md).

@@ -1,7 +1,7 @@
-# دراسة حالة: توحيد هاش/شفّر/فك_تشفير بين المحرّكين
+# دراسة حالة: توحيد هاش/شفر/فك_تشفير بين المحرّكين
 
 مثال متكامل على **إزالة تباعُد** بين المفسّر والمترجم (لا إضافة ميزة جديدة): دالّتا
-`هاش`/`شفّر`/`فك_تشفير` في وحدة `تأكيدات` كانتا مُنفَّذتين مرّتين بخوارزميّتين
+`هاش`/`شفر`/`فك_تشفير` في وحدة `تأكيدات` كانتا مُنفَّذتين مرّتين بخوارزميّتين
 مختلفتين تمامًا — والمترجم كان يملك **نسخة ثالثة** منفصلة لهدف Android لم يمسّها أحد.
 المرجع اللغويّ للمستخدم في
 [sadlang-docs](https://github.com/sadlang/sadlang-docs/blob/main/src/language/security.md)؛
@@ -15,7 +15,7 @@
 
 ```mermaid
 flowchart TD
-  MOD["وحدة تأكيدات: هاش / شفّر / فك_تشفير"]
+  MOD["وحدة تأكيدات: هاش / شفر / فك_تشفير"]
   MOD --> INT["المفسّر<br/>builtin_module_assertions.cpp<br/>SHA-256 + SHA-256-CTR حقيقيّ"]
   MOD --> CMP["المترجم (سطح مكتب/Windows/Linux)<br/>sad_embedded_runtime.c<br/>FNV-1a + XOR بسيط"]
   MOD --> AND["المترجم (هدف Android)<br/>compiler_driver_android_linker.cpp<br/>نسخة ثالثة منفصلة: FNV-1a"]
@@ -25,8 +25,8 @@ flowchart TD
 ثلاث حقائق متزامنة سبّبت الالتباس:
 1. **`هاش("نفس النص")` يُعطي قيمتين مختلفتين** حسب المحرّك المُشغِّل — FNV-1a
    (عدد صحيح) في المترجم مقابل SHA-256 حقيقيّ (نصّ ست عشريّ) في المفسّر.
-2. **`شفّر`/`فك_تشفير` غير متبادلين عبر المحرّكين** — XOR بسيط في المترجم لا
-   يفكّه SHA-256-CTR الذي شفّر به المفسّر، والعكس.
+2. **`شفر`/`فك_تشفير` غير متبادلين عبر المحرّكين** — XOR بسيط في المترجم لا
+   يفكّه SHA-256-CTR الذي شفر به المفسّر، والعكس.
 3. **`stdlib/crypto/` كانت تبدو الحلّ الصحيح** (OpenSSL كامل: Hash/HMAC/AES/
    Base64) لكن بلا أيّ مستهلك في المفسّر أو المترجم — بُنِيت واختُبِرت (هدف
    CMake `crypto_tests`) دون أن تُربَط بأيّ مسار تنفيذ فعليّ.
@@ -52,13 +52,21 @@ SHA-256/SHA-256-CTR **الذاتيّة التنفيذ** (self-rolled، بلا ا
 | **مولِّد LLVM** ([`security_builtins_ops.cpp`](https://github.com/sadlang/s-programming-language/blob/dev/compiler/src/backend/llvm/builders/builtins/security_builtins_ops.cpp)) | توقيع `sad_security_hash`: `(i8*) -> i64` | `(i8*) -> i8*` |
 | **مُصدِّر Android** ([`compiler_driver_android_linker.cpp`](https://github.com/sadlang/s-programming-language/blob/dev/tools/compiler/compiler_driver_android_linker.cpp)) | نسخة ثالثة FNV-1a منفصلة تمامًا | نفس SHA-256 (`sad_sha256_rotr`/`sad_sha256_raw`/`sad_security_hash`) — هذا الهدف لا يملك `sad_security_encrypt`/`decrypt` أصلًا |
 
+> 📎 **الاسم القانونيّ `شفر` بلا شدّة.** مصدرُ الحقيقة
+> [`assertions.yaml`](https://github.com/sadlang/s-programming-language/blob/dev/language-truth/builtins/assertions.yaml)
+> يسجّل `canonical: شفر`، وكذلك `builtin_registry_generated.h`. وتُكتَب في اختبارات
+> السلوك `شفّر` بشدّةٍ فتعمل، لأنّ المعجميّ **يتخطّى علامات التشكيل العربيّة
+> (U+064B–U+065F)** داخل المعرِّفات
+> ([`lexer_core.cpp`](https://github.com/sadlang/s-programming-language/blob/dev/shared/lexer/src/lexer_core.cpp#L1281)).
+> فالشدّةُ زينةُ كتابةٍ لا فرقُ اسم — والقانونيُّ للتوثيق والأدوات هو المجرَّد.
+
 `sad_security_encrypt`/`decrypt` نُقِلا بنفس بنية المفسّر: مقطع `nonce` عشوائيّ
 8 بايت في بداية الناتج، وكل كتلة 32 بايت تُخفى بـ`SHA-256(مفتاح ‖ nonce ‖ عدّاد)`
 كتيّار مفاتيح XOR.
 
 ```mermaid
 flowchart LR
-  SRC["هاش(نص) / شفّر(نص، مفتاح)"] --> INTP["المفسّر: تقييم مباشر<br/>sha256 lambda"]
+  SRC["هاش(نص) / شفر(نص، مفتاح)"] --> INTP["المفسّر: تقييم مباشر<br/>sha256 lambda"]
   SRC --> SIR["المترجم: CALL sad_security_*<br/>(SadTypeKind::String الآن)"]
   SIR --> RT["sad_embedded_runtime.c<br/>sad_sha256_raw مطابق للمفسّر"]
   INTP -.->|"تكافؤ حرفيّ + تبادليّة عابرة للمحركين"| RT
@@ -96,11 +104,14 @@ flowchart LR
 
 ## الاختبار (تكافؤ مزدوج)
 
-`tests/behavior/sections/09_المكتبة_القياسية/04_تشفير/` — أربعة ملفّات:
-شعاعات FIPS 180-4 الرسميّة لـ`هاش("")`/`هاش("abc")`، تبادليّة `شفّر`/`فك_تشفير`
-عبر نصوص عربيّة/مختلطة/متعدّدة الكتل، شعاع ثابت مُسجَّل يدويًّا كمرساة انحدار،
-واختبار مفتاح أطول من 256 بايت (يرصد رجوع باغ الاقتطاع الصامت). كلّ ملفّ يُشغَّل
-عبر `sad-run.exe` **و**`sadc.exe` ويُقارَن الناتج حرفيًّا (ADR-03) — هذا ما
+`tests/behavior/sections/09_المكتبة_القياسية/04_تشفير/` — **٢٠ ملفًّا اليوم**،
+وُلد من هذا التوحيد أربعةٌ منها (`150`–`153`): شعاعات FIPS 180-4 الرسميّة
+لـ`هاش("")`/`هاش("abc")`، تبادليّة `شفر`/`فك_تشفير` عبر نصوص عربيّة/مختلطة/متعدّدة
+الكتل، شعاع ثابت مُسجَّل يدويًّا كمرساة انحدار، واختبار مفتاح أطول من 256 بايت (يرصد
+رجوع باغ الاقتطاع الصامت). أمّا البقيّة (`154`–`168`) فمن
+[حملة توسيع مكتبة التشفير](crypto-library-expansion.md) اللاحقة: BLAKE3 · PBKDF2 ·
+HKDF · AEAD · Argon2id · X25519 · Ed25519 وحدودُها القصوى. كلّ ملفّ يُشغَّل
+عبر `sad-run.exe` **و**`sad-build.exe` ويُقارَن الناتج حرفيًّا (ADR-03) — هذا ما
 يضمن ألّا يعود التباعُد.
 
 ---

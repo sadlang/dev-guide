@@ -16,7 +16,7 @@ s-programming-language/
 │   └── src/backend/llvm/   ← LLVMCodeGen + builders
 ├── stdlib/                 ← المكتبة القياسية (core/io/math/string/network/graphics)
 ├── runtime/                ← ABI/FFI المستقلّ + الوضع الحرّ (freestanding)
-├── tools/                  ← sadinfo · lsp · formatter · pkg · repl · compiler(sadc CLI)
+├── tools/                  ← analyze · build · check · compiler(واجهة sad-build) · formatter · hub · lsp · pkg · profiler · repl · security-scanner · wasm · apk_builder
 ├── language-truth/         ← ⭐ مصدر الحقيقة الموحّد (YAML)
 │   ├── keywords.yaml · operators.yaml · types.yaml · directives.yaml
 │   ├── builtins/ · errors/ · grammar/   ← قواعد الإنتاج (SoT)
