@@ -37,12 +37,8 @@
     "shared/parser/src/core/parser_main.cpp#L40-1500": "sha256:3ae6310f5ebc9df6",
     "shared/types/generated/sad_type_kind_generated.h": "fd336d51f192b64fe7e63ca25fbb2938479003a5",
     "shared/types/include/sad_type_system.h": "4e792e5b8ddb605fbb1c33200c019e9ded39f656",
-    "shared/types/include/type_bridge.h": "0bf37baafc415409082a284c9b2de84d3837e4e1",
     "shared/types/include/value.h": "9b40909fd452fac4e27e41aed85852020f2af1e6",
     "tools/compiler/compiler_driver_android_linker.cpp": "e0c69cb8859b4d6b65bde3e4a4d37980c108dbd9",
-    "tools/compiler/runtime/sad_embedded_runtime.c": "6fa885fb7277c79674aaab298ee5cadd6ff162b3",
-    "vm/include/sad_vm_executor.h": "2a9c74f182c5d76643b58dfd036877ad03ad97c1",
-    "vm/include/sad_vm_opcodes.h": "8b92d998a5a26d3b9716d25bd6dee8a61a5fca4d",
-    "vm/src/sad_vm_executor.cpp": "76a1d059b635ebc6a3d55f0fb9b75c95fa2984a7"
+    "tools/compiler/runtime/sad_embedded_runtime.c": "6fa885fb7277c79674aaab298ee5cadd6ff162b3"
   }
 }

@@ -36,7 +36,7 @@
 - [المفسّر الشجري (Interpreter)](backend/interpreter.md)
 - [التمثيل الوسيط SIR](backend/sir.md)
 - [توليد LLVM (المترجم sadc)](backend/llvm.md)
-- [الآلة الافتراضية (VM)](backend/vm.md)
+- [الخلفيّة الأصليّة بلا LLVM (SIR → ELF64)](backend/native.md)
 - [دراسة حالة: توحيد هاش/شفّر/فك_تشفير](backend/crypto-unification.md)
 - [دراسة حالة: توسيع مكتبة التشفير (٥ مراحل + Argon2id)](backend/crypto-library-expansion.md)
 

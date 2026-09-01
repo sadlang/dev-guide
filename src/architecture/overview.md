@@ -9,7 +9,8 @@
 | النواة المشتركة | `shared/` | معجمي، نحوي، AST، نظام الأنواع `Value`، نظام الأخطاء |
 | المفسّر | `interpreter/` | مفسّر شجريّ؛ `InterpreterCore` يدير المتغيّرات والدوال والنطاقات والتقييم |
 | المترجم | `compiler/` | AST → SIR → LLVM IR → ملفّ تنفيذيّ (SIR يدعم تعليمات ملكية) |
-| الآلة الافتراضية | `vm/` | بايت كود مرتبط مباشرةً بالمفسّر |
+| الخلفيّة الأصليّة | `compiler/include/backend/native/` | SIR → شيفرة آلة → ELF64 ساكن بلا LLVM ولا رابطٍ أجنبيّ — [الفصل](../backend/native.md) |
+| ~~الآلة الافتراضية~~ | — | `vm/` أُزيل من الشجرة بالإيداع `bcf0a746` («ستُعاد كتابتها من الصفر») — لا فصل له حتّى تُكتب |
 | المكتبة القياسية | `stdlib/` | وحدات عربية: core/io/math/string/network/graphics |
 | الأدوات | `tools/` | lsp · formatter · pkg · repl · sadc CLI · sadinfo |
 | مصدر الحقيقة | `language-truth/` | YAML SoT لكل بيانات اللغة + القواعد |
@@ -26,7 +27,7 @@ flowchart TD
   SRC["مصدر .ص (UTF-8)"] --> LEX["LexerCore<br/>shared/lexer"]
   LEX --> PAR["ParserCore<br/>shared/parser"]
   PAR --> AST["AST<br/>shared/ast"]
-  AST --> INT["InterpreterCore / VM<br/>(تنفيذ فوريّ)"]
+  AST --> INT["InterpreterCore<br/>(تنفيذ فوريّ)"]
   AST --> SIR["SIRBuilder<br/>compiler/src/frontend"]
   SIR --> OPT["SIROptimizer"]
   OPT --> LLVM["LLVMCodeGen<br/>compiler/src/backend/llvm"]

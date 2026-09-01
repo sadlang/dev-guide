@@ -28,7 +28,7 @@
   </a>
   <a class="card" href="backend/interpreter.html">
     <span class="ico">⚡</span><span class="t">الواجهة الخلفيّة</span>
-    <span class="d">المفسّر · SIR · LLVM · VM.</span>
+    <span class="d">المفسّر · SIR · LLVM.</span>
   </a>
   <a class="card" href="contributing/workflow.html">
     <span class="ico">🌿</span><span class="t">المساهمة</span>
