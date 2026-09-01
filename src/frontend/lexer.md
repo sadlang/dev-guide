@@ -42,7 +42,7 @@ flowchart TD
 | `ح"` (نصّ خام) | `0xD8 0xAD` + `"` | `STRING_RAW` | [L1675](https://github.com/sadlang/s-programming-language/blob/dev/shared/lexer/src/lexer_core.cpp#L1675) |
 | `م"` / `ص"` (نصّ منسَّق) | `0xD9 0x85` / `0xD8 0xB5` + `"` | `STRING_FSTRING` | [L1694](https://github.com/sadlang/s-programming-language/blob/dev/shared/lexer/src/lexer_core.cpp#L1694) |
 | `×` ضرب | `0xC3 0x97` | `OP_MULTIPLY` | [L1726](https://github.com/sadlang/s-programming-language/blob/dev/shared/lexer/src/lexer_core.cpp#L1726) |
-| `،` فاصلة | `0xD8 0x8C` | `ARABIC_COMMA` | [L1743](https://github.com/sadlang/s-programming-language/blob/dev/shared/lexer/src/lexer_core.cpp#L1746) |
+| `،` فاصلة | `0xD8 0x8C` | `ARABIC_COMMA` | [L1746](https://github.com/sadlang/s-programming-language/blob/dev/shared/lexer/src/lexer_core.cpp#L1746) |
 | `؛` منقوطة | `0xD8 0x9B` | `ARABIC_SEMICOLON` | [L1753](https://github.com/sadlang/s-programming-language/blob/dev/shared/lexer/src/lexer_core.cpp#L1753) |
 | `؟` استفهام | `0xD8 0x9F` | `QUESTION` (و`؟.`→`QUESTION_DOT`) | [L1760](https://github.com/sadlang/s-programming-language/blob/dev/shared/lexer/src/lexer_core.cpp#L1760) |
 

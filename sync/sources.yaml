@@ -22,8 +22,8 @@ chapters:
 
   - file: src/frontend/parser.md
     sources:
-      - { path: shared/parser/src/core/parser_main.cpp, lines: "40-1500" }       # التهيئة→الموزّعات
-      - { path: shared/parser/src/core/parser_expressions.cpp, lines: "45-1130" } # سلسلة الأسبقيّة
+      - { path: shared/parser/src/core/parser_main.cpp, lines: "40-1600" }       # التهيئة→الموزّعات→tryParseDirective (L1588)
+      - { path: shared/parser/src/core/parser_expressions.cpp, lines: "45-1160" } # سلسلة الأسبقيّة حتى parsePrimary (L1149)
       - shared/parser/include/parser_core.h
       - language-truth/operators.yaml
 
@@ -75,6 +75,7 @@ chapters:
       - shared/memory_policy/include/memory/policy/gc_mode.h
       - shared/memory_policy/include/memory/policy/memory_mode_flag.h
       - shared/memory_policy/src/memory_mode_flag.cpp
+      - language-truth/cli_flags.yaml   # عائلة memory: الأسماء القانونيّة العشرة (مصدر جدول الأعلام)
 
   - file: src/systems/types.md
     sources:

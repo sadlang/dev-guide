@@ -10,3 +10,4 @@ mermaid-init.js
 .DS_Store
 Thumbs.db
 *.swp
+__pycache__/
