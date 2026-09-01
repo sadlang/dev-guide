@@ -14,9 +14,8 @@ s-programming-language/
 ├── compiler/               ← المترجم: AST → SIR → LLVM IR → تنفيذيّ
 │   ├── src/frontend/       ← SIRBuilder + sir_types.h (opcodes الملكية)
 │   └── src/backend/llvm/   ← LLVMCodeGen + builders
-├── vm/                     ← الآلة الافتراضية (بايت كود مرتبط بالمفسّر)
 ├── stdlib/                 ← المكتبة القياسية (core/io/math/string/network/graphics)
-├── runtime/                ← ABI/FFI المستقلّ + ربط VM
+├── runtime/                ← ABI/FFI المستقلّ + الوضع الحرّ (freestanding)
 ├── tools/                  ← sadinfo · lsp · formatter · pkg · repl · compiler(sadc CLI)
 ├── language-truth/         ← ⭐ مصدر الحقيقة الموحّد (YAML)
 │   ├── keywords.yaml · operators.yaml · types.yaml · directives.yaml

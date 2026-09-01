@@ -59,11 +59,16 @@ chapters:
     sources:
       - compiler/src/backend/llvm
 
-  - file: src/backend/vm.md
+  - file: src/backend/native.md
     sources:
-      - vm/include/sad_vm_opcodes.h
-      - vm/include/sad_vm_executor.h
-      - vm/src/sad_vm_executor.cpp
+      - { path: compiler/include/backend/native/sir_native_lowering.h, lines: "1-30" }  # عقد الجسر (الترويسة)
+      - compiler/include/backend/native/sir_lowering_common.h   # LoweringDriver<Target> + LoweringDiagnostics
+      - compiler/include/backend/native/elf64_writer.h
+      - compiler/include/backend/native/x86_variable_encoder.h
+      - tools/compiler/compiler_driver_native.cpp               # المدخل من --خلفية-أصلية
+      - language-truth/backend                                  # targets · sir_opcodes · isel · abi · diagnostics · value_repr
+      - scripts/codegen/gen_native_diagnostics.py
+      - scripts/native_backend/run_native_proofs.sh             # المُنادي وحرّاسه الأربعة
 
   - file: src/systems/memory.md
     sources:
@@ -75,7 +80,6 @@ chapters:
     sources:
       - shared/types/include/sad_type_system.h
       - shared/types/generated/sad_type_kind_generated.h
-      - shared/types/include/type_bridge.h
       - shared/types/include/value.h
       - language-truth/types.yaml
 

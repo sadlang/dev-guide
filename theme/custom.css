@@ -62,12 +62,36 @@
 }
 
 /* ── الجداول ───────────────────────────────────────────────────────────────── */
+/* (AR) الجدولُ يُمرَّر أفقيًّا ولا يُسحَق.
+   الواقعُ المقيس: mdBook يلفّ كلَّ جدولٍ بـ`div.table-wrapper` (٦٦/٦٦ جدولًا في
+   الإخراج المبنيّ)، و`css/general-*.css:35` يعطيها `overflow-x:auto` أصلًا.
+   فالعلّةُ لم تكن غيابَ الحاوية بل `width:100%` على الجدول: يُساوي عرضَ الحاوية
+   دائمًا فلا يقعُ تجاوزٌ ولا يعملُ التمرير — فتُسحَق الأعمدة. الإصلاحُ الفعليّ هو
+   `width:auto; min-width:100%` أدناه. القاعدةُ التالية لا تُغيّر سلوكَ التمرير
+   (مكرِّرةٌ عمدًا كتوثيقٍ وحارسٍ لو تغيّر ثيمُ mdBook)، وتُضيف تدويرَ الحوافّ فقط. */
+.content .table-wrapper {
+  overflow-x: auto;
+  border-radius: var(--sad-radius);
+}
 .content table {
   border-collapse: collapse;
   border-radius: var(--sad-radius);
   overflow: hidden;
   box-shadow: 0 1px 8px rgba(0,0,0,.06);
-  width: 100%;
+  width: auto;
+  min-width: 100%;
+}
+/* (AR) على الشاشات الضيّقة: أرضيّةُ عرضٍ للخليّة كي يقعَ التجاوزُ فالتمريرُ بدل
+   السحق. الأرضيّةُ للخلايا النثريّة؛ الخليّةُ الأولى (المفتاح) أعرض.
+   قياسٌ: `--content-max-width: 750px` في mdBook، فعمودُ المحتوى لا يتجاوز ٧٥٠px
+   مهما اتّسعت الشاشة؛ لذا الأرضيّةُ تخصّ الهاتفَ حصرًا (أعرضُ جدولٍ في `src`
+   سبعةُ أعمدة: `src/systems/memory.md:71` — يتجاوز ٧٥٠px بمحتواه وحدَه فيُمرَّر
+   على كلّ عرض). */
+@media (max-width: 760px) {
+  .content table th,
+  .content table td { min-width: 8rem; }
+  .content table th:first-child,
+  .content table td:first-child { min-width: 10rem; }
 }
 .content table thead {
   background: linear-gradient(90deg, var(--sad-accent), var(--sad-accent-2));
@@ -161,3 +185,51 @@
 .navy .content .card,
 .coal .content .card,
 .ayu  .content .card { background: rgba(255,255,255,.04); color: #c8d3de !important; }
+
+/* ── فهرس الصفحة (يبنيه theme/page-toc.js) ───────────────────────────────────── */
+.page-toc {
+  background: var(--sad-accent-soft);
+  border: 1px solid rgba(11,114,133,.18);
+  border-radius: var(--sad-radius);
+  padding: .6rem .9rem;
+  margin: 0 0 1.6rem;
+  font-size: .92em;
+}
+.page-toc > summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--sad-accent);
+  list-style: none;
+}
+.page-toc > summary::-webkit-details-marker { display: none; }
+.page-toc > summary::before { content: "☰ "; }
+.page-toc ul {
+  margin: .6rem 0 .2rem;
+  padding-right: 1.2rem;
+  padding-left: 0;
+  list-style: none;
+  columns: 2;
+  column-gap: 1.6rem;
+}
+.page-toc li { margin: .18rem 0; break-inside: avoid; }
+.page-toc .page-toc-l3 { padding-right: 1rem; opacity: .85; font-size: .95em; }
+/* (AR) الرفعُ إلى `.content .page-toc a` ضروريّ: `.content a:not(.header)` أعلاه
+   خصوصيّتُه (٠,٢,١) وتهزم (٠,١,١) لو كُتبت `.page-toc a` وحدَها. */
+.content .page-toc a { color: var(--sad-ink); text-decoration: none; }
+.content .page-toc a:hover { color: var(--sad-accent); text-decoration: underline; }
+@media (max-width: 760px) { .page-toc ul { columns: 1; } }
+@media print { .page-toc { display: none; } }
+/* (AR) الوضعُ الداكن: `--sad-accent-soft` (#e3fafc) لوحٌ فاتحٌ يصرخ في navy/coal/ayu
+   — نفسُ معالجةِ الاقتباسات والبطاقات أعلاه. */
+.navy .content .page-toc,
+.coal .content .page-toc,
+.ayu  .content .page-toc { background: rgba(16,152,173,.10); border-color: rgba(16,152,173,.28); }
+.navy .content .page-toc a,
+.coal .content .page-toc a,
+.ayu  .content .page-toc a { color: #c8d3de; }
+.navy .content .page-toc > summary,
+.coal .content .page-toc > summary,
+.ayu  .content .page-toc > summary { color: #66d9e8; }
+.navy .content .page-toc a:hover,
+.coal .content .page-toc a:hover,
+.ayu  .content .page-toc a:hover { color: #66d9e8; }
