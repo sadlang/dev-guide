@@ -14,6 +14,10 @@
   --json            تقرير JSON للأتمتة.
   --update          يثبّت البصمات الحاليّة (بعد مراجعة الدليل).
   --ref REF         يتجاوز ref البيان (مثلًا وسم إصدار: v1.2.0) — لربط المزامنة بالإصدارات.
+                    تنبيه: البصماتُ المخزّنة أُخذت عند `lock.ref`، فقياسُها عند مرجعٍ سواه
+                    يجعل «حُذف/متعذّر» تعني «غير موجودٍ عند ذلك المرجع» لا «أُزيل من اللغة»؛
+                    لذا يرفع الفحصُ لافتةً على المعيار حين يختلف المرجعان. ولربط الدليل
+                    بإصدارٍ منشور: أعِد البصم عنده (--ref vX --update --set-version X).
   --set-version V   مع --update: يكتب covers_version=V في القفل (ارفعه عند مراجعة إصدار).
   --validate        حارس بلا شبكة: يتحقّق من سلامة البيان (مسارات الفصول، تكرار المفاتيح،
                     صيغة الأسطر، وأن كل فصل تقنيّ في SUMMARY مسجَّل).
@@ -238,21 +242,33 @@ def cmd_guard_lock(manifest: dict, base_path: str, changed_path: str) -> int:
     changed_files = {l.strip().replace("\\", "/")
                      for l in Path(changed_path).read_text(encoding="utf-8").splitlines()
                      if l.strip()}
+    # (AR) القاعدة: **كلّ** فصلٍ يستشهد بالمصدر يجب أن يُعدَّل، لا أيّ فصلٍ منها.
+    #      المفتاحُ المشترك (`scripts/codegen` بين codegen.md وphilosophy.md مثلًا)
+    #      كان يمرّ بتعديل أحدهما فَيَسِمُ الآخرَ طازجًا دون أن يقرأه أحد — أي أنّ الحارسَ
+    #      نفسَه كان يكتم ما بُني لِيَكشِفَه. (أربعة مفاتيحَ مشتركةٍ اليوم.)
     offenders = []
     for key in advanced + added:
         chapters = chapters_for_key(manifest, key)
-        if not any(c in changed_files for c in chapters):
-            offenders.append((key, chapters))
+        untouched = [c for c in chapters if c not in changed_files]
+        if untouched or not chapters:
+            offenders.append((key, chapters, untouched))
     if offenders:
         print("❌ كتمٌ صامت مرصود: تقدّمت بصماتٌ في القفل دون تعديل فصولها:\n")
-        for key, chapters in offenders:
-            print(f"   • المصدر `{key}` تقدّم، لكن لم يُعدَّل أيّ من: "
-                  f"{', '.join(chapters) or '(لا فصل!)'}")
+        for key, chapters, untouched in offenders:
+            if not chapters:
+                print(f"   • المصدر `{key}` تقدّم، ولا فصلَ يستشهد به أصلًا!")
+                continue
+            shared = [c for c in chapters if c not in untouched]
+            print(f"   • المصدر `{key}` تقدّم، ولم يُعدَّل: "
+                  f"{', '.join(untouched)}")
+            if shared:
+                print(f"     (مشتركٌ مع فصولٍ عُدّلت: "
+                      f"{', '.join(shared)} — تعديلُ أحدها لا يُبرّئُ البقية)")
         print("\nالقاعدة: لا تثبّت بصمةً جديدة (`--update`) إلّا بعد مراجعة الفصل "
               "المرتبط وتعديله فعليًّا. راجع الفصل، عدّله، ثم أعِد --update.")
         return 1
     print(f"✅ الحارس مرّ: كل بصمةٍ تقدّمت ({len(advanced)+len(added)}) رافقها "
-          "تعديلُ فصلها.")
+          "تعديلُ **كلّ** فصلٍ يستشهد بها.")
     return 0
 
 
@@ -266,6 +282,20 @@ def cmd_check(manifest: dict, ref: str, as_json: bool) -> int:
     lock = json.loads(LOCKFILE.read_text(encoding="utf-8"))
     old = lock.get("sources", {})
 
+    # (AR) البصماتُ المخزّنة أُخذت عند `lock["ref"]`. قياسُها عند مرجعٍ آخر
+    #      يقارن شيئًا بشيءٍ سواه: مسارٌ لم يكن قد وُجد بعدُ عند وسمٍ قديم
+    #      يُقرأ «حُذف». (قِيس: v1.0.0 وسمُ 2026-03-09، وهو قبل `language-truth/`
+    #       و`scripts/codegen`، فكان التقريرُ الأسبوعيّ يعلن حذفَ 30 مسارًا
+    #       وتعذّرَ 47، وكلّها قائمةٌ سليمةٌ على dev. القضيّة #1 شاهدُها.)
+    lock_ref = lock.get("ref")
+    if lock_ref and lock_ref != ref:
+        print(f"⚠️ المرجع المقيس `{ref}` يخالف مرجع القفل `{lock_ref}`.\n"
+              f"   «حُذف» و«متعذّر الوصول» أدناه تعني «غير موجودٍ عند `{ref}`» "
+              f"لا «أُزيل من اللغة».\n"
+              f"   لقياس تعفّنٍ حقيقيّ: قِس عند مرجع القفل (--ref {lock_ref})، "
+              f"أو أعِد البصم عند `{ref}` (--ref {ref} --update).\n",
+              file=sys.stderr)
+
     changed = [k for k, s in shas.items() if k in old and old[k] != s]
     added = [k for k in shas if k not in old]
     removed = [k for k in old if k not in shas]
@@ -275,6 +305,7 @@ def cmd_check(manifest: dict, ref: str, as_json: bool) -> int:
     report = {
         "drift": bool(drift_keys or missing or added),
         "ref": ref,
+        "lock_ref": lock_ref,
         "changed": sorted(changed),
         "added": sorted(added),
         "removed": sorted(removed),
