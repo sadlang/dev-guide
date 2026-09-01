@@ -8,6 +8,14 @@
   - ملفّ/مجلد كامل: بصمة git (blob/tree sha) عبر `gh api .../contents`.
   - نطاق أسطر (تقليل الضجيج): نجلب المحتوى الخام، نقتطع النطاق، ونبصمه sha256.
     هكذا لا يُطلِق تعديلٌ خارج النطاق إنذارًا كاذبًا، ويُرصد «تعفّن» المنطقة الموثَّقة.
+  - أسماء المدخلات `{path, names: true}`: نبصم **أسماءَ وأنواعَ** مدخلات المجلّد
+    (مرتَّبةً) لا محتواها. هذا النمطُ هو الوحيد الذي يطابق دعوى «هذا المجلّد يحوي
+    كذا وكذا» — فبصمةُ الشجرة (tree sha) تنقلب مع أيّ تعديلِ محتوًى داخله فتُنتج
+    إنذارًا أسبوعيًّا دائمًا، وهو عينُ الضجيجِ الذي يُسكِت الكاشفَ كلَّه.
+    ويُكتب `path: "."` لبصم جذر المستودع (دعاوى خريطة الشجرة).
+  - مصدرٌ داخليّ `self:<path>`: يُبصَم من **هذا المستودع** لا من مستودع اللغة، بلا
+    شبكة. لأنّ فصولًا (مثل freshness.md) توثّق أدواتِ الدليل نفسِها، فكانت تتعفّن
+    عنها بلا كاشف — وقد وقع ذلك فعلًا: وصف الفصلُ سلوكًا نُقض في نفس اليوم.
 
 الأطوار:
   (افتراضيّ)        فحص وتقرير؛ يفشل (1) عند الانجراف.
@@ -59,13 +67,28 @@ SUMMARY = ROOT / "src" / "SUMMARY.md"
 
 # ── تطبيع المصادر ──────────────────────────────────────────────────────────────
 def normalize_source(s) -> dict:
-    """يحوّل مصدرًا (نصّ أو كائن {path, lines}) إلى صيغة موحّدة بمفتاح فريد."""
+    """يحوّل مصدرًا (نصّ أو كائن {path, lines|names}) إلى صيغة موحّدة بمفتاح فريد."""
     if isinstance(s, str):
-        return {"path": s, "lines": None, "key": s}
+        return {"path": s, "lines": None, "names": False, "key": s}
     path = s["path"]
     lines = s.get("lines")
-    key = f"{path}#L{lines}" if lines else path
-    return {"path": path, "lines": lines, "key": key}
+    names = bool(s.get("names"))
+    if names:
+        key = f"{path}#names"
+    elif lines:
+        key = f"{path}#L{lines}"
+    else:
+        key = path
+    return {"path": path, "lines": lines, "names": names, "key": key}
+
+
+def is_self(spec: dict) -> bool:
+    """مصدرٌ داخليّ: يُبصَم من مستودع الدليل نفسِه، لا من مستودع اللغة."""
+    return spec["path"].startswith("self:")
+
+
+def self_path(spec: dict) -> Path:
+    return ROOT / spec["path"][len("self:"):]
 
 
 def parse_lines(spec: str) -> tuple[int, int]:
@@ -74,6 +97,16 @@ def parse_lines(spec: str) -> tuple[int, int]:
 
 
 # ── جلب البصمات عبر gh ─────────────────────────────────────────────────────────
+def _run(args: list[str]) -> str | None:
+    """أمرٌ محلّيّ (git) — يعيد None عند أيّ فشل، فلا يُقرأ العجزُ نجاحًا."""
+    try:
+        out = subprocess.run(args, capture_output=True, text=True,
+                             check=True, encoding="utf-8")
+    except (subprocess.CalledProcessError, FileNotFoundError, OSError):
+        return None
+    return out.stdout
+
+
 def _gh(args: list[str]) -> str | None:
     try:
         out = subprocess.run(["gh", *args], capture_output=True, text=True,
@@ -104,22 +137,99 @@ def _gh_tree_sha(repo: str, ref: str, path: str) -> str | None:
     return out.strip() if out else None
 
 
+def gh_entry_names(repo: str, ref: str, path: str) -> str | None:
+    """أسماءُ وأنواعُ مدخلات المجلّد مرتَّبةً — لا محتواها."""
+    api_path = "" if path in (".", "") else path
+    # (AR) `contents` يقتطع عند 1000 مدخلًا **صامتًا** — لا يُخطئ. فقائمةٌ مقتطعةٌ
+    #      تُبصَم بصمةً ثابتةً تخضرّ أبدًا. نجعل التجاوزَ «متعذّرًا» لا بصمة.
+    out = _gh(["api", f"repos/{repo}/contents/{api_path}?ref={ref}",
+               "--jq", 'if type=="array" then (if length >= 1000 then "CAP" '
+                       'else ([.[] | .type + ":" + .name] | sort | join("\n")) end) '
+                       'else "NOTDIR" end'])
+    if out is None:
+        return None
+    val = out.strip()
+    if val == "CAP":
+        print(f"⚠️ {path}: تجاوز سقفَ 1000 مدخلٍ في contents API — لم يُقَس.",
+              file=sys.stderr)
+        return None
+    return None if val in ("", "NOTDIR") else val
+
+
+def _names_digest(listing: str) -> str:
+    return "names:" + hashlib.sha256(listing.encode("utf-8")).hexdigest()[:16]
+
+
 def gh_raw(repo: str, ref: str, path: str) -> str | None:
     return _gh(["api", "-H", "Accept: application/vnd.github.raw",
                 f"repos/{repo}/contents/{path}?ref={ref}"])
 
 
+def _chunk_digest(raw: str, lines_spec: str | None) -> str | None:
+    lines = raw.splitlines()
+    if lines_spec:
+        a, b = parse_lines(lines_spec)
+        lines = lines[a - 1:b]
+    # (AR) لا مقطعَ ⇒ «متعذّر» يحمرّ، لا بصمةَ خواءٍ تُثبَّت فتخضرّ للأبد.
+    #      أربعُ حالاتٍ متباينةٍ كانت تُنتج البصمةَ نفسَها (`e3b0c442…`): ردٌّ فارغٌ
+    #      من gh · نطاقٌ خارجَ الملفّ · ملفٌّ صفريّ · ملفٌّ انكمش دون النطاق.
+    #      فلو انكمش الملفُّ لاحمرَّ الفحصُ مرّةً ثمّ ثبّته `--update`، ومنذُها
+    #      يبقى المصدرُ أخضرَ وهو غيرُ مقيسٍ أصلًا.
+    if not lines:
+        return None
+    digest = hashlib.sha256("\n".join(lines).encode("utf-8")).hexdigest()[:16]
+    return f"sha256:{digest}"
+
+
+def fetch_self_sha(spec: dict) -> str | None:
+    """بصمةُ مصدرٍ داخليّ من قرص هذا المستودع — بلا شبكة."""
+    p = self_path(spec)
+    if spec["names"]:
+        # (AR) الوعدُ في freshness.md أن نستبعدَ ما لا يخزّنه git. مسحُ القرص
+        #      بقائمةِ استثناءاتٍ منثورةٍ لا يفي به: قِيس أنّ جذرَ مستودعِ اللغة
+        #      43 مدخلًا في git و70 على القرص (`book/` · `.venv` · بل ملفّاتُ
+        #      خطوةِ الحارسِ نفسِها). فنشتقُّ الحقيقةَ من git لا من القرص.
+        if not p.is_dir():
+            return None
+        # (AR) القرصُ يحوي ما لا يحويه git (`.git` · `__pycache__` · مخلّفاتُ بناء)،
+        #      فبصمةٌ تشملها تنقلب بلا واقعةٍ في المستودع — ضجيجٌ غيرُ حتميّ.
+        #      نستبعدها لتبقى البصمةُ دالّةً على الشجرة المُودَعة وحدها.
+        skip = {".git", "__pycache__", ".mypy_cache", ".pytest_cache"}
+        rel = spec["path"][len("self:"):].strip("/")
+        out = _run(["git", "-C", str(ROOT), "ls-tree", "HEAD",
+                    (rel + "/") if rel else "./"])
+        if out is not None:
+            listed = []
+            for line in out.splitlines():
+                if not line.strip():
+                    continue
+                meta, _, name = line.partition("\t")
+                kind = meta.split()[1]
+                listed.append(("dir:" if kind == "tree" else "file:")
+                              + Path(name).name)
+            return _names_digest("\n".join(sorted(listed))) if listed else None
+        entries = sorted(("dir:" if c.is_dir() else "file:") + c.name
+                         for c in p.iterdir() if c.name not in skip)
+        # (AR) مجلّدٌ فارغ ⇒ None كجانب github تمامًا (git لا يخزّن مجلّدًا فارغًا)،
+        #      فلا نسجّل «بصمةَ خواء» تُقرأ نجاحًا.
+        return _names_digest("\n".join(entries)) if entries else None
+    if not p.is_file():
+        return None
+    return _chunk_digest(p.read_text(encoding="utf-8"), spec["lines"])
+
+
 def fetch_sha(repo: str, ref: str, spec: dict) -> str | None:
-    """بصمة المصدر: نطاق أسطر ⇒ sha256 للمقطع؛ غير ذلك ⇒ git sha."""
+    """بصمة المصدر: أسماءُ مدخلات ⇒ names؛ نطاقُ أسطر ⇒ sha256؛ غيرُهما ⇒ git sha."""
+    if is_self(spec):
+        return fetch_self_sha(spec)
+    if spec["names"]:
+        listing = gh_entry_names(repo, ref, spec["path"])
+        return None if listing is None else _names_digest(listing)
     if spec["lines"]:
         raw = gh_raw(repo, ref, spec["path"])
         if raw is None:
             return None
-        lines = raw.splitlines()
-        a, b = parse_lines(spec["lines"])
-        chunk = "\n".join(lines[a - 1:b])
-        digest = hashlib.sha256(chunk.encode("utf-8")).hexdigest()[:16]
-        return f"sha256:{digest}"
+        return _chunk_digest(raw, spec["lines"])
     return gh_content_sha(repo, ref, spec["path"])
 
 
@@ -162,12 +272,24 @@ def collect_shas(manifest: dict, ref: str) -> tuple[dict, list]:
 
 
 # ── ملف القفل ──────────────────────────────────────────────────────────────────
+def derived_version(repo: str, ref: str) -> str | None:
+    """`dev@<إيداع>` مشتقًّا من المرجعِ البعيد — لا منسوخًا بيدٍ فيتقادم."""
+    out = _run(["git", "ls-remote", f"https://github.com/{repo}.git", ref])
+    if not out or not out.split():
+        return None
+    return f"{ref}@{out.split()[0][:8]}"
+
+
 def write_lock(manifest: dict, ref: str, shas: dict, version: str | None) -> None:
+    # (AR) الفصلُ يقول إنّ `covers_version` «يسمّي الإيداعَ الذي قِيست عنده
+    #      البصمات». فلا يُنسخ من البيان — يُشتقّ. المكتوبُ بيدٍ صادقٌ اليومَ
+    #      بالمصادفة، ولا شيءَ يمنع كذبَه غدًا (عددٌ منثورٌ نسخةً ثانيةً لواقعة).
+    auto = None if version is not None else derived_version(manifest["repo"], ref)
     lock = {
         "repo": manifest["repo"],
         "ref": ref,
         "covers_version": version if version is not None
-        else manifest.get("covers_version"),
+        else (auto or manifest.get("covers_version")),
         "sources": shas,
     }
     LOCKFILE.parent.mkdir(parents=True, exist_ok=True)
@@ -177,18 +299,52 @@ def write_lock(manifest: dict, ref: str, shas: dict, version: str | None) -> Non
 
 
 # ── (د) حارس البيان دون شبكة ────────────────────────────────────────────────────
+# (AR) الأجزاءُ التي تستوجب تسجيلَ المصادر. كانت أربعةً (`frontend` · `backend` ·
+#      `systems` · `sot`) فبقيت `architecture/` و`getting-started/` و`contributing/`
+#      **خارجَ المظلّة كلّيًّا** — وهي التي تحمل دعاوى أوامرَ يُشغّلها القارئ
+#      (`runner.py`، مسارُ البناء، شجرةُ المستودع)، فتعفّنت بلا كاشف. النطاقُ الآن
+#      كلُّ فصلٍ في قسمٍ من الأقسام السبعة؛ وصفحاتُ الجذر (`introduction` ·
+#      `glossary` · `status` · `SUMMARY`) خارجه عمدًا: دعاواها عن الدليلِ نفسِه
+#      لا عن اللغة، ومنها ما يُسجَّل طوعًا حين يحمل دعوى مقيسة.
+GUARDED_SECTIONS = ("frontend|backend|systems|sot|"
+                    "architecture|getting-started|contributing")
+
+
 def technical_chapters_in_summary() -> set[str]:
-    """فصول SUMMARY التي تحت أقسامٍ تقنيّة تستوجب تسجيل مصادرها."""
+    """فصول SUMMARY التي تحت أقسامٍ محروسة تستوجب تسجيل مصادرها."""
     import re
     if not SUMMARY.exists():
         return set()
     text = SUMMARY.read_text(encoding="utf-8")
-    # نلتقط مسارات الفصول داخل الأجزاء التقنيّة (الأماميّة/الخلفيّة/الأنظمة/مصدر الحقيقة)
-    techy = re.findall(r"\]\((src/(?:frontend|backend|systems|sot)/[\w\-/]+\.md)\)",
+    techy = re.findall(r"\]\((src/(?:" + GUARDED_SECTIONS + r")/[\w\-/]+\.md)\)",
                        text)
     # SUMMARY يستخدم مسارات نسبيّة بلا بادئة src/ — لذا نعيد التقاطها بنمطين
-    rel = re.findall(r"\]\(((?:frontend|backend|systems|sot)/[\w\-/]+\.md)\)", text)
+    rel = re.findall(r"\]\(((?:" + GUARDED_SECTIONS + r")/[\w\-/]+\.md)\)", text)
     return {("src/" + p) for p in rel} | set(techy)
+
+
+def self_drift_errors(manifest: dict) -> list[str]:
+    """تعفّنُ مصادرِ `self:` مقيسًا بلا شبكة — بوّابةُ PR لا كاشفٌ أسبوعيّ."""
+    if not LOCKFILE.exists():
+        # (AR) لا تُرجِع «سليم» لغيابِ ما تقيسُ به. حذفُ ملفٍّ واحدٍ كان يُطفئ
+        #      البوّابةَ صامتةً وخضراء — وهو عينُ «الأخضرُ يعني لم يُقَس».
+        if any(is_self(s) for s in unique_specs(manifest).values()):
+            return ["لا يوجد sources.lock.json — فلا يمكن قياسُ تعفّنِ مصادر "
+                    "`self:` المسجَّلة. شغّل `--update` أوّلًا."]
+        return []
+    locked = json.loads(LOCKFILE.read_text(encoding="utf-8")).get("sources", {})
+    out = []
+    for key, spec in sorted(unique_specs(manifest).items()):
+        if not is_self(spec) or key not in locked:
+            continue
+        cur = fetch_self_sha(spec)
+        if cur is None or cur == locked[key]:
+            continue
+        chapters = ", ".join(chapters_for_key(manifest, key)) or "—"
+        out.append(f"مصدرٌ داخليّ تغيّر ولم تُثبَّت بصمتُه: {key}\n"
+                   f"     راجِع وعدِّل: {chapters}‏ ثمّ شغّل "
+                   f"`python scripts/check_sync.py --update`.")
+    return out
 
 
 def cmd_validate(manifest: dict) -> int:
@@ -198,6 +354,17 @@ def cmd_validate(manifest: dict) -> int:
         if spec["key"] in seen and seen[spec["key"]] != ch:
             pass  # نفس المصدر لفصول متعدّدة مسموح
         seen[spec["key"]] = ch
+        if spec["names"] and spec["lines"]:
+            errs.append(f"مصدرٌ يجمع `names` و`lines` معًا (متعارضان): {spec['key']}")
+        if is_self(spec):
+            p = self_path(spec)
+            if spec["names"] and not p.is_dir():
+                errs.append(f"مصدرٌ داخليّ `names` ليس مجلّدًا: {spec['key']}")
+            elif not spec["names"] and not p.is_file():
+                errs.append(f"مصدرٌ داخليّ غير موجود: {spec['key']}")
+            elif not spec["names"] and fetch_self_sha(spec) is None:
+                errs.append("مصدرٌ داخليّ نطاقُه خارجَ الملفّ (لا شيءَ يُقاس): "
+                            f"{spec['key']}")
         if spec["lines"]:
             try:
                 a, b = parse_lines(spec["lines"])
@@ -214,20 +381,35 @@ def cmd_validate(manifest: dict) -> int:
         if (ROOT / ch).exists() and ch not in chapter_files:
             warns.append(f"فصلٌ تقنيّ غير مسجَّل في sources.yaml: {ch}")
 
+    # (AR) مصادرُ `self:` لا تحتاج شبكة، فيمكن قياسُ تعفّنها **في نفس الـPR** لا أن
+    #      ينتظر الأسبوعيّ. بدون هذا كان النمطُ الجديد كاشفًا أسبوعيًّا لا بوّابةَ PR:
+    #      يُعدَّل `check_sync.py` وحده فيمرّ الـPR أخضرَ والفصلُ الذي يصفه متعفّن.
+    errs.extend(self_drift_errors(manifest))
+
     for w in warns:
         print(f"⚠️ {w}")
     for e in errs:
         print(f"❌ {e}")
     if errs:
         return 1
-    print(f"✅ البيان سليم ({len(chapter_files)} فصلًا مسجَّلًا)"
-          + (f"، {len(warns)} تحذيرًا" if warns else "") + ".")
-    return 1 if warns else 0
+    # (AR) لا تُنهِ سجلًّا فاشلًا بسطرِ «✅». مَن يمسح سجلَّ CI بعينه يقرأ آخرَ
+    #      سطرٍ حكمًا؛ فكان «✅ البيان سليم … 1 تحذيرًا» يُقرأ نجاحًا ورمزُه 1.
+    if warns:
+        print(f"❌ البيانُ ناقص: {len(chapter_files)} فصلًا مسجَّلًا، "
+              f"و{len(warns)} فصلًا محروسًا بلا مصادر — فشل.")
+        return 1
+    print(f"✅ البيان سليم ({len(chapter_files)} فصلًا مسجَّلًا).")
+    return 0
 
 
 # ── (أ) حارس القفل: لا كتم صامت ─────────────────────────────────────────────────
-def cmd_guard_lock(manifest: dict, base_path: str, changed_path: str) -> int:
-    """يرفض تقدّم بصمةٍ في القفل دون تعديل الفصل المرتبط في نفس الـPR."""
+def cmd_guard_lock(manifest: dict, base_path: str, changed_path: str,
+                   base_manifest_path: str | None = None) -> int:
+    """يرفض تقدّمَ بصمةٍ **أو إسقاطَها** دون تعديل الفصل المرتبط في نفس الـPR."""
+    if not LOCKFILE.exists():
+        print("❌ لا يوجد sync/sources.lock.json — الحارسُ لم يُقَس. "
+              "شغّل `--update` أوّلًا.")
+        return 1
     cur = json.loads(LOCKFILE.read_text(encoding="utf-8")).get("sources", {})
     base_file = Path(base_path)
     if not base_file.exists() or not base_file.read_text(encoding="utf-8").strip():
@@ -245,21 +427,43 @@ def cmd_guard_lock(manifest: dict, base_path: str, changed_path: str) -> int:
     # (AR) القاعدة: **كلّ** فصلٍ يستشهد بالمصدر يجب أن يُعدَّل، لا أيّ فصلٍ منها.
     #      المفتاحُ المشترك (`scripts/codegen` بين codegen.md وphilosophy.md مثلًا)
     #      كان يمرّ بتعديل أحدهما فَيَسِمُ الآخرَ طازجًا دون أن يقرأه أحد — أي أنّ الحارسَ
-    #      نفسَه كان يكتم ما بُني لِيَكشِفَه. (أربعة مفاتيحَ مشتركةٍ اليوم.)
+    #      نفسَه كان يكتم ما بُني لِيَكشِفَه. (عددُ المفاتيح المشتركة يُشتقّ من
+    #      البيان عند التشغيل — لا يُكتب هنا رقمًا يتقادم.)
+    # (AR) الإسقاطُ كتمٌ صامتٌ أيضًا، من البابِ المقابل: بدل تقديمِ البصمةِ بلا
+    #      مراجعة، إزالتُها بلا مراجعة. إسقاطُ مصدرٍ من البيان ثمّ `--update`
+    #      كان يقتل الكاشفَ لفصولٍ كاملةٍ والبوّابتان خضراوان — قِيس بإسقاط
+    #      `.#names` فمرّ الحارسُ بـ«0 بصمةٍ تقدّمت» وثلاثةُ فصولٍ فقدت دعواها.
+    dropped = sorted(k for k in base if k not in cur)
+    base_manifest = None
+    if base_manifest_path:
+        raw = Path(base_manifest_path).read_text(encoding="utf-8")
+        if raw.strip():
+            base_manifest = yaml.safe_load(raw)
     offenders = []
     for key in advanced + added:
         chapters = chapters_for_key(manifest, key)
         untouched = [c for c in chapters if c not in changed_files]
         if untouched or not chapters:
             offenders.append((key, chapters, untouched))
+    for key in dropped:
+        # (AR) الفصولُ تُقرأ من **بيانِ الأساس**: المفتاحُ المُسقَط لا أثرَ له في
+        #      البيان الحاليّ، فقياسُه عليه يعطي قائمةً فارغةً دائمًا.
+        if base_manifest is None:
+            offenders.append((f"{key} (أُسقِط)", [],
+                              ["<بيانُ الأساس غير مُمرَّر — تعذّر القياس>"]))
+            continue
+        was = chapters_for_key(base_manifest, key)
+        untouched = [c for c in was if c not in changed_files]
+        if untouched or not was:
+            offenders.append((f"{key} (أُسقِط)", was, untouched))
     if offenders:
-        print("❌ كتمٌ صامت مرصود: تقدّمت بصماتٌ في القفل دون تعديل فصولها:\n")
+        print("❌ كتمٌ صامت مرصود: تغيّرت بصماتٌ في القفل دون تعديل فصولها:\n")
         for key, chapters, untouched in offenders:
             if not chapters:
-                print(f"   • المصدر `{key}` تقدّم، ولا فصلَ يستشهد به أصلًا!")
+                print(f"   • المصدر `{key}` تغيّر، ولا فصلَ يستشهد به أصلًا!")
                 continue
             shared = [c for c in chapters if c not in untouched]
-            print(f"   • المصدر `{key}` تقدّم، ولم يُعدَّل: "
+            print(f"   • المصدر `{key}` تغيّر، ولم يُعدَّل: "
                   f"{', '.join(untouched)}")
             if shared:
                 print(f"     (مشتركٌ مع فصولٍ عُدّلت: "
@@ -267,8 +471,8 @@ def cmd_guard_lock(manifest: dict, base_path: str, changed_path: str) -> int:
         print("\nالقاعدة: لا تثبّت بصمةً جديدة (`--update`) إلّا بعد مراجعة الفصل "
               "المرتبط وتعديله فعليًّا. راجع الفصل، عدّله، ثم أعِد --update.")
         return 1
-    print(f"✅ الحارس مرّ: كل بصمةٍ تقدّمت ({len(advanced)+len(added)}) رافقها "
-          "تعديلُ **كلّ** فصلٍ يستشهد بها.")
+    print(f"✅ الحارس مرّ: كل بصمةٍ تقدّمت ({len(advanced)+len(added)}) "
+          f"أو أُسقِطت ({len(dropped)}) رافقها تعديلُ **كلّ** فصلٍ يستشهد بها.")
     return 0
 
 
@@ -351,6 +555,8 @@ def main() -> int:
                     help="حارس CI: امنع تقدّم القفل دون تعديل الفصل")
     ap.add_argument("--base", help="مع --guard-lock: ملف قفل الأساس")
     ap.add_argument("--changed-files", help="مع --guard-lock: ملفّ بقائمة الملفّات المعدَّلة")
+    ap.add_argument("--base-manifest",
+                    help="مع --guard-lock: بيانُ الأساس (لقياس المفاتيح المُسقَطة)")
     args = ap.parse_args()
 
     manifest = load_manifest()
@@ -361,7 +567,8 @@ def main() -> int:
     if args.guard_lock:
         if not (args.base and args.changed_files):
             sys.exit("‏--guard-lock يستلزم --base و--changed-files")
-        return cmd_guard_lock(manifest, args.base, args.changed_files)
+        return cmd_guard_lock(manifest, args.base, args.changed_files,
+                              args.base_manifest)
     if args.update:
         shas, missing = collect_shas(manifest, ref)
         write_lock(manifest, ref, shas, args.set_version)

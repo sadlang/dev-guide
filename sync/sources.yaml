@@ -157,3 +157,69 @@ chapters:
   - file: src/contributing/governance.md
     sources:
       - .github/skills/sad-lang-dev/references/governance.md
+
+  # الموجة الثالثة: فصولٌ كانت خارج الحارس، ودعاواها أوامرُ يُشغّلها القارئ.
+  # (AR) نطاقُ `tests/config.yaml` مشطورٌ بحسب الدعوى: 25-26 مسارا الثنائيَّين،
+  #      و27 `tests_dir` وحده. الجمعُ في نطاقٍ واحد (24-27) كان يقرن **خمسةَ** فصول
+  #      بمفتاحٍ واحد، فيلزم حارسُ القفل تعديلَ فصلٍ لا علاقةَ لدعواه بما تغيّر.
+  - file: src/getting-started/setup.md
+    sources:
+      - { path: CMakeLists.txt, lines: "29-70" }        # cmake_minimum_required(3.15) + BUILD_TESTS OFF + ENABLE_LLVM_BACKEND ON
+      - { path: tests/config.yaml, lines: "25-26" }     # مسارا الثنائيَّين من build/bin/Debug
+      - { path: x.py, lines: "1310-1350" }              # الأوامر الفرعيّة للبوّابة الموحّدة
+      - { path: ".", names: true }                      # دعوى «لا runner.py في الجذر»
+      - { path: tests, names: true }                    # دعوى «tests/runner.py هو المستدعى»
+      - { path: examples, names: true }                 # دعوى «examples\01_مرحبا.ص»
+      - { path: apps/CMakeLists.txt, lines: "292-310" } # sad-build داخل شرط LLVM + البديل sad-build-native
+      - { path: tests/config.yaml, lines: "15-23" }     # تعليقُ «Debug+Release» وعلاجُه في cmake/llvm.cmake
+
+  - file: src/getting-started/first-contribution.md
+    sources:
+      - { path: tests, names: true }                    # `python tests/runner.py` — لا runner.py في الجذر
+      - { path: tests/config.yaml, lines: "27" }        # دعوى «الاختبار تحت tests/behavior»
+      - { path: x.py, lines: "1310-1350" }              # `python x.py build`
+
+  - file: src/getting-started/repo-map.md
+    sources:
+      - language-truth/keywords.yaml                    # ٤٠ محجوزة · ٣ · ٤٤ · ١٧
+      - { path: tests/config.yaml, lines: "27" }        # tests_dir: tests/behavior
+      - { path: ".", names: true }                      # شجرة الجذر كما تُرسم في الفصل
+      - { path: tools, names: true }
+      - { path: stdlib, names: true }
+      - { path: tests, names: true }                    # لا tests/comprehensive
+      - { path: tests/behavior, names: true }           # حِزَم `.ص` الستّ
+      - { path: examples, names: true }                 # 01_مرحبا … 07_مكوّن_مركّب
+      - { path: x.py, lines: "1310-1350" }              # الفصل يسمّي الأوامر الفرعيّة في شجرته
+
+  - file: src/contributing/definition-of-done.md
+    sources:
+      - { path: tests/config.yaml, lines: "25-26" }     # الثنائيّان من تهيئةٍ واحدة
+      - { path: tests, names: true }                    # `python tests/runner.py`
+
+  # ── الحلّ الجذريّ: دعاوى «شكل الشجرة» تُبصَم بأسماء المدخلات (names) لا بمحتواها،
+  #    وفصولُ الدليل التي توثّق أدواتِه تُبصَم من هذا المستودع نفسِه (self:).
+  - file: src/architecture/overview.md
+    sources:
+      - { path: ".", names: true }        # جذر الشجرة — يرصد عودة vm/ أو ظهور جزءٍ جديد
+      - { path: tools, names: true }      # «١٥ مجلّدًا» بأسمائها
+      - { path: stdlib, names: true }     # وحدات `.ص` + مجلّدات الدعم
+      - { path: features, names: true }   # features/graphics — الرسومات ليست في stdlib
+
+  - file: src/architecture/interconnected.md
+    sources:
+      - { path: scripts/codegen, names: true }
+      - { path: interpreter/src/visitors, names: true }
+      - { path: compiler/src/backend/llvm/builders/builtins, names: true }
+      - { path: docs/parser_rule/_generated, names: true }
+      - { path: shared/builtins/generated, names: true } # دعوى مسار builtin_registry_generated.h
+
+  - file: src/contributing/freshness.md
+    sources:
+      - self:scripts/check_sync.py                  # الفصل يصف هذه الأداة بعينها
+      - self:.github/workflows/sync-check.yml       # ومسارَ الفحص الأسبوعيّ
+      - self:.github/workflows/ci.yml               # والفصلُ يصف حارسَي ci.yml بعينهما
+
+  - file: src/glossary.md
+    sources:
+      - { path: tests/config.yaml, lines: "25-26" } # sad-run · sad-build · sadc المتقاعد
+      - { path: tests/config.yaml, lines: "27" }    # دعوى `tests_dir`
