@@ -15,7 +15,7 @@
 ```mermaid
 flowchart TB
   CODE["كود .ص نفسه"]
-  CODE --> DEV["وضع التطوير (--gc)<br/>GC تلقائيّ · بلا تفكير في الملكيّة<br/>مثاليّ لـREPL والتجريب"]
+  CODE --> DEV["وضع التطوير (--جامع)<br/>GC تلقائيّ · بلا تفكير في الملكيّة<br/>مثاليّ لـREPL والتجريب"]
   CODE --> PROD["وضع الإنتاج (--إنتاج)<br/>ملكيّة صارمة كـRust · صفر overhead<br/>فحص الاستعارة وقت الترجمة"]
   DEV -. "المترجم يقترح تحويلات للملكيّة" .-> PROD
 ```
@@ -69,11 +69,11 @@ flowchart LR
 
 | الإعداد المسبق | `mode` | `gcStrategy` | `ownershipMode` | اقتراحات | كشف دورات | مُعلِّم |
 |----------------|--------|--------------|-----------------|:--------:|:---------:|:------:|
-| `gcDefaults()` (`--gc`) | Development | **Tracing** | Disabled | ✗ | ✓ | ✗ |
+| `gcDefaults()` (`--جامع`) | Development | **Tracing** | Disabled | ✗ | ✓ | ✗ |
 | `developmentDefaults()` | Development | ReferenceCounting | Warnings | ✓ | ✓ | ✓ |
 | `productionDefaults()` (`--إنتاج`) | Production | **None** | **UltraStrict** | ✗ | ✗ | ✗ |
 | `learningDefaults()` (`--تعلم`) | Development | ReferenceCounting | Warnings | ✓ | ✓ | ✓ |
-| `kernelDefaults()` (`--نواة`) | Production | None | UltraStrict | ✗ | ✗ | حدّ=0 |
+| `kernelDefaults()` (`--حرّ`) | Production | None | UltraStrict | ✗ | ✗ | حدّ=0 |
 
 > 📌 **النواة (`no_std`):** عند `#![بلا_مكتبة_قياسية]` يُفرَض `kernelDefaults` — لا GC إطلاقًا
 > (`gcMemoryLimitMB = 0`)، ملكيّة `UltraStrict`، بلا اقتراحات ولا كشف دورات. ملكيّةٌ صرفة
@@ -82,35 +82,52 @@ flowchart LR
 ## من العلَم إلى السلوك: `MemoryModeFlag`
 
 [`MemoryModeFlag::parse()`](https://github.com/sadlang/s-programming-language/blob/dev/shared/memory_policy/include/memory/policy/memory_mode_flag.h) يقرأ `argv` ويبني `MemoryModeSettings`.
-الأعلام مسجَّلة في `flagHandlers_` ([`initializeFlags()`](https://github.com/sadlang/s-programming-language/blob/dev/shared/memory_policy/src/memory_mode_flag.cpp#L142))، ولكلّ علَمٍ عربيٍّ مرادفاتٌ إنجليزيّة ومختصرة:
+الأعلام مسجَّلة في `flagHandlers_` ([`initializeFlags()`](https://github.com/sadlang/s-programming-language/blob/dev/shared/memory_policy/src/memory_mode_flag.cpp#L54))،
+وهي **مبنيّةٌ كلُّها من مصدر الحقيقة** ([`cli_flags.yaml`](https://github.com/sadlang/s-programming-language/blob/dev/language-truth/cli_flags.yaml)،
+عائلة `memory`) لا مكتوبةً يدويًّا: التسمية تأتي من الجدول، ولا يبقى في C++ إلّا السلوك
+(`switch` على `FlagAction`).
+
+> ⚠️ **اسمٌ عربيٌّ قانونيٌّ وحيدٌ لكلّ مفهوم — لا مرادفات ولا اختصارات ولا توافقَ خلفيّ.**
+> أُلغي 18 مرادفًا إنجليزيًّا/مختصرًا (`--gc` · `--no-std` · `--freestanding` · `--kernel` ·
+> `--production`/`-p` · `--learn`/`-l` · `--auto`/`-a` · …)؛ يضبط المُهيِّئ
+> `shortName = ""` و`longNameEnglish = longNameArabic`. فإن قرأت في وثيقةٍ أقدم علَمًا
+> لاتينيًّا لسياسة الذاكرة، فهو **لم يعد يُقبَل**.
 
 ```mermaid
 flowchart TD
   ARGV["argv[] / متغيّرات البيئة / ملف التهيئة"] --> PARSE["MemoryModeFlag::parse()"]
   PARSE --> H{"تصنيف العلَم"}
-  H -->|"--إنتاج / --production / -p"| PROD["productionDefaults"]
-  H -->|"--gc / --dev*(مهجور)"| GCD["gcDefaults"]
-  H -->|"--تعلم / --learn / -l"| LRN["learningDefaults"]
-  H -->|"--نواة / --no-std / --kernel"| KRN["kernelDefaults"]
-  H -->|"--تلقائي / --auto / -a"| AUTO["اكتشاف بالسياق"]
-  H -->|"--ملكية= / --gc-strategy= / --حد_ذاكرة="| TUNE["ضبطٌ دقيقٌ فوق الإعداد المسبق"]
+  H -->|"--إنتاج"| PROD["productionDefaults"]
+  H -->|"--جامع"| GCD["gcDefaults"]
+  H -->|"--تعلم"| LRN["learningDefaults"]
+  H -->|"--حرّ"| KRN["kernelDefaults + noStdRequested"]
+  H -->|"--تلقائي"| AUTO["اكتشاف بالسياق"]
+  H -->|"--ملكية= · --جامع=استراتيجية · --حد-الذاكرة="| TUNE["ضبطٌ دقيقٌ فوق الإعداد المسبق"]
+  H -->|"علَمٌ مُزال (--dev · --hybrid · --mixed …)"| REJ["فشلُ تحليلٍ صريح<br/>(لا تحويلَ صامت)"]
   PROD & GCD & LRN & KRN & AUTO & TUNE --> OUT["MemoryModeSettings ← FlagParseResult"]
 ```
 
-**جدول الأعلام الرئيسيّة** (عربيّ ← مرادفات):
+**عائلة `memory` كاملةً على `dev`** (عشرةُ أعلام — لا غيرها):
 
-| العربيّ | المرادفات | الأثر |
-|---------|-----------|-------|
-| `--إنتاج` | `--production` · `--prod` · `--release` · `-p` | ملكيّة صارمة، بلا GC |
-| `--gc` | `--dev`*، `--development`*، `--تطوير`*، `-d`* | GC (يحلّ محلّ `--dev` المهجور) |
-| `--تعلم` | `--learn` · `--learning` · `-l` | GC + تحذيرات + رسائل تعليميّة |
-| `--نواة` | `--no-std` · `--kernel` · `--freestanding` · `--بلا-مكتبة-قياسية` | ملكيّة صرفة `no_std` |
-| `--ملكية=` | `--ownership=` | يضبط `OwnershipMode` يدويًّا |
-| `--gc-strategy=` | — | يختار `GCStrategy` |
-| `--حد_ذاكرة=` | `--gc-memory-limit=` | حدّ ذاكرة الـGC بالميغابايت |
+| العلَم | النوع | الأثر (`sets`) |
+|--------|-------|-----------------|
+| `--إنتاج` | راية | `productionDefaults` — ملكيّة صارمة، بلا جامع |
+| `--جامع[=استراتيجية]` | قيمة اختياريّة | `gcDefaults`؛ ومع قيمةٍ يضبط `gcStrategy` |
+| `--تعلم` | راية | `learningDefaults` — جامع + تحذيرات + رسائل تعليميّة |
+| `--حرّ` | راية | `kernelDefaults + noStdRequested` — ملكيّة صرفة بلا مكتبة قياسيّة |
+| `--تلقائي` | راية | `MemoryMode::Auto` — اكتشافٌ بالسياق |
+| `--ملكية=` | قيمة | `ownershipMode` (`off\|warnings\|strict\|ultra`) |
+| `--حد-الذاكرة=` | قيمة | `gcMemoryLimitMB` — حدّ ذاكرة الجامع بالميغابايت |
+| `--اقتراحات` | راية | `enableOwnershipSuggestions` |
+| `--كشف-دورات` | راية | `enableCycleDetection` |
+| `--تصحيح-الذاكرة` | راية | `DebugMemory` |
 
-> 🔁 `--dev`/`--تطوير`/`--mixed` تُحوَّل جميعها إلى `--gc` (تنبيهُ إهجار) — انظر جدول
-> الإهجار في [`memory_mode_flag.cpp`](https://github.com/sadlang/s-programming-language/blob/dev/shared/memory_policy/src/memory_mode_flag.cpp#L281).
+> 🛑 **الأعلام المُزالة تُرفَض، لا تُترجَم.** `--dev` · `--development` · `-d` · `--تطوير` ·
+> `--hybrid` · `--mixed` · `--مختلط` كلُّها في جدول `deprecatedFlags`
+> ([`memory_mode_flag.cpp`](https://github.com/sadlang/s-programming-language/blob/dev/shared/memory_policy/src/memory_mode_flag.cpp#L174))،
+> لكنّ الجدول **لا يُحوِّلها**: يضبط `result.success = false` ويُصدِر «أُزيل نهائيًّا في
+> Phase E-3، استخدم `--gc` بديلًا». الإحلالُ المذكور في الرسالة إرشادٌ للقارئ، لا
+> تحويلٌ يجريه المُحلِّل — والبديلُ القانونيُّ اليومَ `--جامع`.
 
 ## ترتيب الأولويّة في حسم الإعداد
 

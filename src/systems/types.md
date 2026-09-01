@@ -24,7 +24,8 @@
 
 ## ① مصدر الحقيقة: `SadTypeKind` (مولَّد)
 
-التعداد `SadTypeKind` **يُولَّد آليًّا** من [`language-truth/types.yaml`](../sot/language-truth.md) (52 قيمة) —
+التعداد `SadTypeKind` **يُولَّد آليًّا** من [`language-truth/types.yaml`](../sot/language-truth.md) (**49 قيمة**، والعددُ نفسُه
+مولَّدٌ ثابتًا `SAD_TYPE_KIND_COUNT` — لا تنسخه نثرًا في موضعٍ ثانٍ) —
 لا يُحرَّر يدويًّا. أيّ نوعٍ جديد يُضاف إلى الكتالوج ثم يُعاد التوليد:
 
 ```mermaid
@@ -36,7 +37,8 @@ flowchart LR
   SYS --> INT["المفسّر (Value)"]
 ```
 
-القيم موزَّعة على عائلات: **أوّليّة** (Void · Integer · Float · Boolean · String · Byte · Char) ·
+القيم موزَّعة على عائلات: **أوّليّة** (Void · Integer · Float · Boolean · String) ·
+**أوّليّة محدَّدة الحجم** (Int8 · Int16 · Int32 · UInt8 · UInt16 · UInt32 · UInt64 · Float32 · Char) ·
 **مركّبة** (Array · Map · Tuple · Slice) · **معرَّفة مستخدِمًا** (Class · Struct · Enum · Trait) ·
 **قابلة للاستدعاء** (Function · Closure) · **جبريّة** (Union · Intersection · Optional · Result) ·
 **عامّة** (Generic · TypeParameter · TypeAlias) · **مراجع** (Pointer · Reference · MutableRef) ·
@@ -95,9 +97,9 @@ classDiagram
 
 | الدالة | تصدُق على |
 |--------|-----------|
-| `isPrimitiveKind(k)` | الأوّليّات (عدد، عشريّ، منطقيّ، نصّ، بايت، حرف، فراغ) + الأوّليّات محدَّدة الحجم (`Int8…Char`) |
-| `isNumericKind(k)` | العدديّة (Integer · Float · Byte) + العدديّة محدَّدة الحجم (`Int8…Float64`) |
-| `isCompositeKind(k)` | المركّبة (Array · Map · Tuple · Struct · Class…) |
+| `isPrimitiveKind(k)` | `Void`/`Integer`/`Float`/`Boolean`/`String`/`UInt8` + المدى `Int8…Char` |
+| `isNumericKind(k)` | يُفوَّض إلى `sadTypeKindIsNumeric()` المولَّد عن حقل `numeric` في `types.yaml` — **لا مدًى على ترتيب التعداد** (كان `Int8…Float64`؛ أُزيل لأنّه يربط الدلالة بترتيب رأسٍ مولَّد) |
+| `isCompositeKind(k)` | `Array` · `Map` · `Tuple` · `Slice` **فقط** (لا `Struct` ولا `Class`) |
 | `isCallableKind(k)` | القابلة للاستدعاء (Function · Closure) |
 
 وعلى مستوى الكائن: `isNullable()` · `isCopyable()` (تَفصِل القيميّ عن المرجعيّ) · `isMutable()` ·
@@ -144,7 +146,7 @@ flowchart TD
 | | `Value` | `SadValue` (وقت تشغيل الثنائيّ) |
 |--|---------|-------------------------------|
 | العالَم | المفسّر (`sad-run`) | الثنائيّ المُترجَم |
-| اللغة | صنف C++ (`shared/types/value.h`) | `struct` C (`compiler/.../llvm_runtime.h`) |
+| اللغة | صنف C++ (`shared/types/include/value.h`) | `struct` C (`compiler/include/backend/llvm/llvm_runtime.h`) |
 | النوع | `SadTypeKind` + `SadTypePtr` | وسم `type` |
 
 > ⚠️ لا يلتقيان في الذاكرة: برنامجٌ بالمفسّر لا يلمس `SadValue`، وثنائيٌّ مُترجَم لا يلمس

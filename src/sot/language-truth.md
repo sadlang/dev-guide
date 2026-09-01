@@ -14,8 +14,14 @@ language-truth/
 ├── errors/                ← رموز ورسائل الأخطاء (مصدر V5)
 ├── grammar/               ← ⭐ قواعد الإنتاج النحويّة (SoT) — انظر فصلها
 ├── _schemas/              ← مخطّطات JSON للتحقّق من كل ملف
-└── _meta/ · _notation/ · learning/ · stdlib/ · tests/
+└── _meta/ · learning/ · stdlib/ · tests/ · backend/ · dialects/ · tools/
 ```
+
+> 📏 **المقيس على `dev`:** جذرُ `language-truth/` فيه **18** ملفَّ YAML و**11** مجلّدًا
+> وملفَّي توثيق (`README.md` · `VERSIONING.md`) — 31 مدخلًا في الجملة. والشجرةُ أعلاه عيّنةُ توجيهٍ لا جردًا: `backend/` (جداولُ
+> الخلفيّة الأصليّة — انظر [فصلها](../backend/native.md)) و`dialects/` و`tools/`
+> أُضيفت بعد كتابة الفصل، وثمانيةُ ملفّات `ui_*.yaml` تعيش في الجذر أيضًا. ولا وجودَ
+> لمجلّد `_notation/` في الجذر: الترميزُ ملفٌّ واحدٌ داخل القواعد، `grammar/_notation.yaml`.
 
 ## أمثلة على الصيغة
 **كلمة مفتاحيّة** (`keywords.yaml`):

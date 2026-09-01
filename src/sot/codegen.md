@@ -12,12 +12,18 @@ flowchart LR
 ```
 
 ## المولّدات (`scripts/codegen/`)
+
+> 📏 **المقيس على `dev`:** **79** ملفَّ بايثون في `scripts/codegen/`، منها **31** بالبادئة
+> `gen_` (مولِّد فعليّ) و**22** بالبادئة `check_` (حرّاسٌ وفاحصون)، و**5** في `_lib/`
+> (مكتباتٌ مساعدة)، والباقي (21) اختباراتُ `test_*` وسكربتاتُ ترحيلٍ لمرّةٍ واحدة.
+> الجدولُ أدناه عيّنةٌ تشرح النمط، لا جردًا كاملًا — الجردُ في المجلّد نفسِه.
+
 | المولّد | المصدر → الناتج |
 |--------|------------------|
 | `gen_keywords.py` | `keywords.yaml` → `keywords_generated.{h,cpp}` |
 | `gen_types.py` | `types.yaml` → كود الأنواع المُولَّد |
 | `gen_builtins_registry.py` / `gen_all_builtins_yaml.py` | `builtins/` → `builtin_registry_generated.h` |
-| `gen_error_messages.py` / `gen_sadinfo_errors.py` | `errors/` → رسائل/تشخيص مُولَّد |
+| `gen_error_messages.py` | `errors/` → رسائل/تشخيص مُولَّد (أداةُ `sadinfo` ومولِّدُها `gen_sadinfo_errors.py` تقاعدا في تمّوز ٢٠٢٦ — #144) |
 | `gen_parser_grammar_docs.py` | `grammar/*.yaml` → `docs/parser_rule/_generated/` |
 | `check_grammar_conformance.py` | يفحص تغطية القواعد وتماسك وسوم الاختبارات |
 

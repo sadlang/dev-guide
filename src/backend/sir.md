@@ -7,7 +7,7 @@
 توليد LLVM IR. يفصل دلالة لغة ص (الملكية، الأنواع، تدفّق التحكّم) عن تفاصيل LLVM.
 
 ## لماذا طبقة وسيطة؟
-- **تحسين مستقلّ:** `SIROptimizer` يطبّق تمريرات على SIR.
+- **تحسين مستقلّ:** المُحسِّن `Sad::Compiler::Optimizer::Optimizer` يطبّق تمريراتٍ على SIR.
 - **تشخيص أسهل:** SIR dumps أوضح من LLVM IR الخام.
 - **عزل:** تغيير الواجهة الخلفيّة (LLVM) لا يَمَسّ منطق بناء SIR.
 - **دلالة الملكية:** SIR يدعم تعليمات ملكية (ownership) خاصّة بلغة ص.
@@ -16,13 +16,14 @@
 | الملف | المحتوى |
 |------|---------|
 | `compiler/include/frontend/sir_types.h` | تعداد `SIROpcode` + أنواع SIR (الملكية) |
-| `compiler/src/frontend/` | `SIRBuilder` (AST → SIR) + `SIROptimizer` |
+| `compiler/src/frontend/` | `SIRBuilder` (AST → SIR) + بانياتُه في `builders/` |
+| `compiler/include/sir_optimizer/` · `compiler/src/sir_optimizer/` | `Optimizer` + تمريراتُه (`cse_pass` · `licm_pass` · `sroa_pass` · `dead_code_elimination_pass` · …) |
 
 ## الموضع في الخطّ
 ```mermaid
 flowchart LR
   AST --> SB["SIRBuilder"] --> SIR["وحدة SIR"]
-  SIR --> SO["SIROptimizer"] --> SIR2["SIR محسَّن"]
+  SIR --> SO["Optimizer<br/>(sir_optimizer/)"] --> SIR2["SIR محسَّن"]
   SIR2 --> CG["LLVMCodeGen"] --> IR["LLVM IR"]
 ```
 
@@ -38,8 +39,8 @@ flowchart LR
 
 ## تخفيض مطابقة الأنماط (`طابق`)
 
-يُخفَّض `طابق` في الواجهة الأماميّة (`sir_builder_match_patterns.cpp` +
-`builders/statement_match.cpp`) — **لا** في الواجهة الخلفيّة. الملفّ الخلفيّ
+يُخفَّض `طابق` في الواجهة الأماميّة (`compiler/src/frontend/sir_builder_match_patterns.cpp` +
+`compiler/src/frontend/builders/statement_match.cpp`) — **لا** في الواجهة الخلفيّة. الملفّ الخلفيّ
 `pattern_codegen*.cpp` (`generateMatchCode`) **ميّتٌ تمامًا (صفر مستدعٍ)** رغم بقائه في
 البناء؛ لا تُضِف إليه.
 
